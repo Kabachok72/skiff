@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="color-scheme" content="light dark">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Skiff · тренажёр</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=Unbounded:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme: light;
+  --bg:#E7EBEF; --surface:#F7F9FB; --ink:#15202B; --muted:#55626F; --rule:#C6CED6;
+  --p1:#2459C8; --p2:#0B7F6F; --p3:#6E45CC; --p4:#A8306B; --p5:#8A5B00;
+  --good:#0B7F6F; --warn:#B45309; --onp:#FFFFFF;
+  --key:#FFFFFF; --keyink:#15202B; --keyedge:#97A3AF; --bkey:#1B2229; --bkeyink:#F1F4F7;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --bg:#0F151B; --surface:#17202A; --ink:#E3E8ED; --muted:#9AA7B3; --rule:#2A3642;
+    --p1:#7EA6FF; --p2:#45C9B3; --p3:#B096FF; --p4:#F08BC0; --p5:#E9B651;
+    --good:#45C9B3; --warn:#F2A65A; --onp:#0F151B;
+    --key:#E8EDF1; --keyink:#15202B; --keyedge:#5D6A77; --bkey:#05080B; --bkeyink:#EEF2F5;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --bg:#0F151B; --surface:#17202A; --ink:#E3E8ED; --muted:#9AA7B3; --rule:#2A3642;
+  --p1:#7EA6FF; --p2:#45C9B3; --p3:#B096FF; --p4:#F08BC0; --p5:#E9B651;
+  --good:#45C9B3; --warn:#F2A65A; --onp:#0F151B;
+  --key:#E8EDF1; --keyink:#15202B; --keyedge:#5D6A77; --bkey:#05080B; --bkeyink:#EEF2F5;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{-webkit-text-size-adjust:100%;scroll-padding-top:calc(env(safe-area-inset-top,0px) + 64px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 17px/1.55 "Golos Text",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding-bottom:230px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+a{color:var(--p1)}
+button{font:inherit;color:inherit}
+.wrap{max-width:46rem;margin:0 auto;padding:0 1.1rem}
+
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;background:var(--surface);border-bottom:1px solid var(--rule)}
+.bar .wrap{display:flex;align-items:center;gap:.7rem;min-height:56px}
+.logo{font:700 15px/1 "Unbounded",system-ui,sans-serif;white-space:nowrap;background:none;border:0;padding:0;cursor:pointer}
+.stats{margin-left:auto;display:flex;gap:.5rem;font-size:14px;font-weight:600}
+.pill{padding:.3rem .6rem;border-radius:999px;border:1px solid var(--rule);background:var(--bg);white-space:nowrap}
+.tabs{display:flex;gap:3px;background:var(--bg);border:1px solid var(--rule);border-radius:10px;padding:3px}
+.tab{border:0;background:transparent;padding:.45rem .75rem;border-radius:8px;font:600 14px/1 "Golos Text",system-ui,sans-serif;text-decoration:none;color:var(--muted);cursor:pointer;white-space:nowrap}
+.tab.cur{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(10,20,30,.18)}
+.tab:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+@media (max-width:520px){.bar .wrap{flex-wrap:wrap;row-gap:.4rem;padding-top:.45rem;padding-bottom:.45rem}.tabs{flex:1 1 100%}.tab{flex:1;text-align:center;padding:.5rem .2rem;font-size:13px}.stats{margin-left:0}.stats .pill{padding:.25rem .5rem;font-size:13px}}
+
+h1{font:700 clamp(28px,7vw,44px)/1.08 "Unbounded",system-ui,sans-serif;margin:1.8rem 0 .6rem}
+h2{font:700 20px/1.25 "Unbounded",system-ui,sans-serif;margin:2rem 0 .6rem}
+.muted{color:var(--muted)}
+.card{background:var(--surface);border:1px solid var(--rule);border-radius:14px;padding:1.1rem 1.15rem;margin:1rem 0}
+
+.start .row{display:flex;gap:.5rem;flex-wrap:wrap;margin:.8rem 0}
+.chip{border:1.5px solid var(--rule);background:var(--bg);border-radius:999px;padding:.55rem 1rem;font-weight:600;cursor:pointer}
+.chip[aria-pressed="true"]{border-color:var(--p1);background:var(--p1);color:var(--onp)}
+.big{display:inline-flex;align-items:center;gap:.6rem;border:0;border-radius:12px;background:var(--p1);color:var(--onp);font:700 17px/1 "Golos Text",system-ui,sans-serif;padding:.95rem 1.4rem;cursor:pointer}
+.ghost{border:1.5px solid var(--rule);background:transparent;border-radius:10px;padding:.6rem .9rem;font-weight:600;cursor:pointer}
+.big:focus-visible,.ghost:focus-visible,.chip:focus-visible,.mpill:focus-visible,.step:focus-visible,.logo:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.plan{margin:.6rem 0 0;padding:0;list-style:none;font-size:15px}
+.plan li{display:flex;justify-content:space-between;gap:1rem;padding:.35rem 0;border-bottom:1px solid var(--rule)}
+.plan li:last-child{border-bottom:0}
+
+.lvl{margin:1rem 0}
+.lvl h3{font:700 16px/1.3 "Golos Text",system-ui,sans-serif;margin:0 0 .5rem;color:var(--c)}
+.mlist{display:flex;flex-direction:column;gap:.4rem}
+.mpill{display:flex;align-items:center;gap:.7rem;text-align:left;width:100%;border:1px solid var(--rule);border-left:4px solid var(--c);background:var(--surface);border-radius:10px;padding:.6rem .8rem;cursor:pointer}
+.mpill .t{flex:1}
+.mpill .m{font-size:13px;color:var(--muted);white-space:nowrap}
+.mpill .s{width:1.5rem;text-align:center;font-weight:700}
+.mpill.done .s{color:var(--good)}
+.mpill.done .t{color:var(--muted)}
+.mpill.next{box-shadow:0 0 0 2px var(--c) inset}
+
+/* session */
+.dots{display:flex;gap:6px;margin:1.2rem 0 .4rem}
+.dots i{flex:1;height:6px;border-radius:3px;background:var(--rule)}
+.dots i.done{background:var(--good)}
+.dots i.now{background:var(--c,var(--p1))}
+.kind{font-size:14px;font-weight:600;color:var(--c,var(--p1));margin:.6rem 0 0}
+.stitle{font:700 clamp(24px,6vw,34px)/1.12 "Unbounded",system-ui,sans-serif;margin:.2rem 0 .6rem}
+.timer{display:flex;align-items:center;gap:1rem;margin:.6rem 0 1rem}
+.clock{font:700 40px/1 "Unbounded",system-ui,sans-serif;font-variant-numeric:tabular-nums;min-width:6.5ch}
+.tbar{flex:1;height:10px;border-radius:5px;background:var(--rule);overflow:hidden}
+.tbar b{display:block;height:100%;width:0;background:var(--c,var(--p1));transition:width .25s linear}
+.timeup{display:none;margin:.4rem 0 1rem;padding:.8rem 1rem;border-radius:12px;border:2px solid var(--warn);color:var(--ink);background:var(--surface);font-weight:600}
+.timeup.show{display:block;animation:pulse 1.2s ease-in-out 3}
+@keyframes pulse{50%{border-color:transparent}}
+@media (prefers-reduced-motion: reduce){.timeup.show{animation:none}.tbar b{transition:none}}
+.goal{font-size:18px;margin:.2rem 0 .8rem}
+.steps{list-style:none;margin:0;padding:0;counter-reset:s}
+.step{counter-increment:s;display:flex;gap:.8rem;align-items:flex-start;width:100%;text-align:left;border:0;border-bottom:1px solid var(--rule);background:transparent;padding:.75rem .2rem;cursor:pointer;line-height:1.5}
+.step::before{content:counter(s);flex:none;width:1.8rem;height:1.8rem;border-radius:50%;border:2px solid var(--c,var(--p1));color:var(--c,var(--p1));font:700 13px/1.6rem "Unbounded",system-ui,sans-serif;text-align:center}
+.step[aria-pressed="true"]::before{content:"✓";background:var(--c,var(--p1));color:var(--onp)}
+.step[aria-pressed="true"] span{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--rule)}
+.actions{display:flex;gap:.6rem;flex-wrap:wrap;margin:1.2rem 0}
+.recall{border:1px dashed var(--rule);border-radius:12px;padding:.9rem 1rem;margin:1rem 0}
+.recall .a{display:none;margin-top:.5rem;font-weight:700;color:var(--good)}
+.recall.open .a{display:block}
+.quizq{font:700 20px/1.35 "Golos Text",system-ui,sans-serif;margin:.6rem 0}
+.qfb{min-height:1.6em;font-weight:600}
+.qfb.ok{color:var(--good)} .qfb.no{color:var(--warn)}
+.more{font-size:15px}
+.summary .num{font:700 34px/1 "Unbounded",system-ui,sans-serif}
+.sgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem;margin:1rem 0}
+.sgrid div{background:var(--surface);border:1px solid var(--rule);border-radius:12px;padding:.8rem;text-align:center}
+.sgrid small{display:block;color:var(--muted);font-size:13px;margin-top:.3rem}
+
+kbd{font:600 .8em/1 "Golos Text",system-ui,sans-serif;display:inline-block;padding:.3em .5em .26em;margin:0 .06em;border:1px solid var(--keyedge);border-bottom-width:3px;border-radius:5px;background:var(--surface);color:var(--ink);white-space:nowrap;vertical-align:.08em}
+kbd.k{border:1.5px solid var(--ink);border-radius:999px;background:transparent;padding-left:1.25em;position:relative}
+kbd.k::before{content:"";position:absolute;left:.45em;top:50%;width:.45em;height:.45em;margin-top:-.225em;border-radius:50%;background:var(--ink)}
+kbd.w{background:var(--key);color:var(--keyink);border-radius:2px 2px 7px 7px;border-bottom-width:4px}
+kbd.x{background:var(--bkey);color:var(--bkeyink);border-color:var(--bkey);border-radius:2px 2px 6px 6px}
+
+/* keyboard dock */
+.dock{position:fixed;left:0;right:0;bottom:0;z-index:8;background:var(--surface);border-top:1px solid var(--rule);padding:.5rem 0 calc(.5rem + env(safe-area-inset-bottom,0px));box-shadow:0 -8px 24px rgba(10,20,30,.12)}
+.dock .wrap{max-width:52rem}
+.dock-top{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;font-size:14px;margin-bottom:.35rem}
+.dock-top .st{color:var(--muted);flex:1;min-width:10rem}
+.dock-btn{border:1.5px solid var(--p1);background:var(--p1);color:var(--onp);border-radius:8px;padding:.45rem .75rem;font-weight:600;cursor:pointer;font-size:14px}
+.dock-btn.alt{background:transparent;color:var(--ink);border-color:var(--rule)}
+.dock-btn:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.dock.min .kbwrap{display:none}
+body.gaming .kbwrap{display:none}
+.gtop{display:flex;justify-content:space-between;align-items:center;gap:.6rem;flex-wrap:wrap;margin-top:1.2rem}
+.hud{display:flex;gap:1rem;flex-wrap:wrap;font-size:15px;margin:.2rem 0 .6rem}
+.hud b{font-variant-numeric:tabular-nums}
+.gwrap{border:1px solid var(--rule);border-radius:14px;overflow:hidden;background:var(--surface);touch-action:none}
+.gwrap canvas{display:block}
+.mpill[disabled]{opacity:.55;cursor:not-allowed}
+.kb{display:block;width:100%;height:auto;touch-action:manipulation}
+.kb .wk{fill:var(--key);stroke:var(--keyedge);stroke-width:1.2;cursor:pointer}
+.kb .bk{fill:var(--bkey);stroke:var(--bkey);cursor:pointer}
+.kb .wk.on{fill:#FFD84D}
+.kb .bk.on{fill:#E0A100;stroke:#E0A100}
+.kb .wk.hint{fill:#BFE8DF}
+.kb .bk.hint{fill:#2E8B7A;stroke:#2E8B7A}
+.kb text{pointer-events:none}
+.kb .wn{fill:#15202B;font:600 12.5px "Golos Text",system-ui,sans-serif;text-anchor:middle}
+.kb .wn.c{font-weight:800;text-decoration:underline}
+.kb .stn{fill:#2459C8;font:700 11px "Golos Text",system-ui,sans-serif;text-anchor:middle}
+.kb .bn{fill:#EEF2F5;font:600 10.5px "Golos Text",system-ui,sans-serif;text-anchor:middle}
+.kb .ob{fill:none;stroke-width:2}
+.kb .ot{font:600 12px "Golos Text",system-ui,sans-serif;text-anchor:middle}
+.kb .o3{stroke:var(--p3);fill:var(--p3)} .kb .o4{stroke:var(--p2);fill:var(--p2)} .kb .o5{stroke:var(--p5);fill:var(--p5)}
+.kb path.ob{fill:none}
+.kb .ot{stroke:none}
+footer{padding:2rem 0 1rem;color:var(--muted);font-size:14px}
+.hidden{display:none !important}
+</style>
+</head>
+<body>
+<header class="bar">
+  <div class="wrap">
+    <nav class="tabs" aria-label="Разделы"><button class="tab cur" id="goHome" type="button" aria-current="page">Тренажёр</button><button class="tab" id="goSchool" type="button">Мастерская</button><button class="tab" id="goGame" type="button">Игра</button><a class="tab" href="uchebnik.html">Справочник</a></nav>
+    <div class="stats"><span class="pill" id="xp">0 XP</span><span class="pill" id="streak">🔥 0</span></div>
+  </div>
+</header>
+
+<main class="wrap" id="app" aria-live="polite"></main>
+
+<footer class="wrap" id="foot">
+  <p>Подробные объяснения — в <a href="uchebnik.html" target="_blank" rel="noopener">учебнике Skiff для чайников</a>. Прогресс хранится только в этом браузере.</p>
+  <button class="ghost" type="button" id="reset">Сбросить прогресс</button>
+</footer>
+
+<section class="dock" id="dock" aria-label="Клавиатура FM-1">
+  <div class="wrap">
+    <div class="dock-top">
+      <button class="dock-btn" type="button" id="connect">Подключить FM-1</button>
+      <span class="st" id="mstatus">Не подключено. Клавиши можно нажимать и мышкой.</span>
+      <button class="dock-btn alt" type="button" id="dockToggle" aria-expanded="true">Скрыть клавиатуру</button>
+    </div>
+    <div class="kbwrap" id="kbwrap"></div>
+  </div>
+</section>
+<script>
+(function(){
+'use strict';
+var BOOK = 'uchebnik.html';
+var LEVELS = [
+  {n:1, title:'Уровень 1 · Ориентир', c:'var(--p1)'},
+  {n:2, title:'Уровень 2 · Первый бит', c:'var(--p2)'},
+  {n:3, title:'Уровень 3 · Живой грув', c:'var(--p3)'},
+  {n:4, title:'Уровень 4 · Звук', c:'var(--p4)'},
+  {n:5, title:'Уровень 5 · Трек', c:'var(--p5)'},
+  {n:6, title:'Уровень 6 · Продвинутое (по желанию)', c:'var(--p1)'}
+];
+/* [b:..] кнопка, [k:..] крутилка, [w:..] нижний ряд, [x:..] верхний ряд */
+var M = [
+ {id:'m1',lvl:1,min:4,ch:2,title:'Карта устройства',goal:'Освоиться: дорожки, звуки, подсказка, меню.',
+  steps:['[k:ALGORITHM] — выберите дорожку с басом, потом с барабанами. Понажимайте клавиши.','[k:PRESETS] щелчок вперёд — новый звук, щелчок назад — прежний.','Зажмите [b:HOME] и прочитайте подсказку на экране.','Отпустите [b:HOME] — откроется меню. Закройте его тапом [b:HOME].'],
+  recall:['Что будет, если зажать и отпустить HOME?','Откроется меню настроек']},
+ {id:'m2',lvl:1,min:3,ch:0,title:'Клавиатура наизусть',quiz:6,goal:'Находить клавиши по названию и номеру шага, не глядя в схему.',
+  steps:['Поставьте октаву в 0: [b:OCT−] и [b:OCT+] вместе.','Откройте [b:HOME] — клавиши играют ноты.','Отвечайте на вопросы ниже нажатием клавиши на FM-1 (или мышкой по схеме).'],
+  recall:['Какая клавиша — шаг 9?','9-я нижнего ряда, G4']},
+ {id:'m3',lvl:1,min:4,ch:2,title:'Соло и мьют: слой GLO',goal:'Глушить и выделять дорожки вживую.',
+  steps:['Запустите [b:PLAY].','Держите [b:GLO] и держите N-ю клавишу нижнего ряда — играет только дорожка N.','Держа [b:GLO], тапните N-ю клавишу верхнего ряда — дорожка замолчала. Ещё тап — вернулась.','Закрепите слой: [b:HOME] + [b:GLO]. Закройте тапом [b:GLO].'],
+  recall:['Как заглушить дорожку 6?','Держать GLO, тапнуть 6-ю клавишу верхнего ряда']},
+ {id:'m1b',lvl:1,min:4,ch:18,title:'Настройки под себя',goal:'Удобный экран и максимум голосов.',
+  steps:['Меню: зажмите и отпустите [b:HOME].','[k:ALGORITHM] — вкладка DISPLAY: THEME — тема, LARGE ON — крупный шрифт.','Вкладка CONTROL: STEP PREVIEW ON — шаги звучат под курсором.','Вкладка SYSTEM: CPU — должно стоять 2 CORES (с версии 2.5 включается само, до 16 голосов). Если там CORE 2 FAILED — оставьте 1 CORE.'],
+  recall:['Где включается второе ядро?','Меню → SYSTEM → CPU → 2 CORES']},
+ {id:'m4',lvl:2,min:8,ch:3,title:'Бочка, снейр, хэт',goal:'Собрать базовый бит по шагам.',
+  steps:['Дорожка с барабанами, тап [b:SEQ] — сетка шагов.','Верхний ряд выбирает барабан: 1-я — бочка, 2-я — снейр, 4-я — хэт.','Бочка: шаги 1, 5, 9, 13 (нижний ряд).','Снейр: шаги 5 и 13.','Хэт: шаги 3, 7, 11, 15.','[b:PLAY] — слушайте. Повторное нажатие шага убирает удар.'],
+  recall:['На каких шагах доли?','1, 5, 9, 13']},
+ {id:'m5',lvl:2,min:4,ch:3,title:'Темп и отмена',goal:'Менять темп и не бояться ошибок.',
+  steps:['Держите [b:GLO] и крутите [k:SELECT]: поставьте 90, потом 125.','Уберите один удар хэта.','Зажмите [b:SAVE] — удар вернулся (отмена).','В окне отмены [b:OCT−] — ещё шаг назад, [b:OCT+] — вперёд.'],
+  recall:['Как отменить последнее действие?','Зажать SAVE']},
+ {id:'m6',lvl:2,min:8,ch:3,title:'Бас по шагам',goal:'Записать басовую линию нота за нотой.',
+  steps:['Стоп. Дорожка с басом, тап [b:SEQ].','[b:OCT−] один раз, затем [b:REC] — на экране KEYS WRITE STEPS.','Клавиша = нота и шаг вперёд. Щелчок [k:PRESETS] = пауза.','Сыграйте: [w:A3] · [w:A3] · [w:A4] · [w:A3] · [w:G3] · [w:A3] · [w:C4] · [w:E4], с паузой после каждой.','[b:REC] — выйти из записи, [b:PLAY] — слушать.'],
+  recall:['Как поставить паузу при записи по шагам?','Один щелчок PRESETS']},
+ {id:'m6b',lvl:2,min:6,ch:6,title:'Длина и копирование',goal:'Из одного такта — два, не записывая заново.',
+  steps:['Дорожка с басом, [b:SEQ], [k:SELECT] до PATTERN.','[k:KNOB 1] LENGTH 32 — паттерн стал два такта.','На NOTES: [b:HOME] + поворот [k:PRESETS] — выделите шаги 1–16.','[b:HOME] + [b:OCT−] — копировать. Курсор на шаг 17, [b:HOME] + [b:OCT+] — вставить.','Поменяйте во втором такте одну-две ноты.'],
+  recall:['Как скопировать выделенные шаги?','HOME + OCT− (вставить — HOME + OCT+)']},
+ {id:'m7',lvl:2,min:5,ch:4,title:'Подбор звука',goal:'Найти свой бас и отметить любимые звуки.',
+  steps:['Тап [b:SAVE], [k:SELECT] на PRESETS.','[k:KNOB 4] LIST → BASS: остались только басы.','[k:PRESETS] — послушайте 5–6 басов на своей линии.','[k:KNOB 3] вправо — звёздочка любимому.','На [b:HOME] [k:KNOB 1] — темнее или ярче.'],
+  recall:['Как показать только басы?','SAVE → PRESETS, KNOB 4 = BASS']},
+ {id:'m8',lvl:3,min:6,ch:6,title:'Дробь и шанс',goal:'Бит перестаёт быть механическим.',
+  steps:['Барабаны, [b:SEQ] два раза — страница FEEL.','[k:PRESETS] — курсор на шаг 15, [k:KNOB 2] X3 — дробь.','Шаг 11: [k:KNOB 1] шанс 50 %.','Послушайте 4 круга: каждый раз чуть по-разному.'],
+  recall:['Где ставится дробь?','SEQ → FEEL, KNOB 2']},
+ {id:'m8b',lvl:3,min:6,ch:8,title:'Инструменты SEQ',goal:'Новые идеи из старой партии за секунды.',
+  steps:['[b:PLAY], дорожка с басом.','Держите [b:SEQ]: [w:G3] — задом наперёд, [w:B3] — сдвиг на шаг, [w:C4] — случайные ноты.','Не отпуская [b:SEQ], [b:OCT−] — всё вернулось.','Барабаны: держите [b:SEQ], [w:F4] — евклидов ритм, [k:KNOB 1] число ударов, [b:OCT+] — применить.','На PATTERN крутите [k:PRESETS]: вперёд, назад, туда-обратно, случайно.'],
+  recall:['Как откатить всё, что сделали в слое SEQ?','Не отпуская SEQ, нажать OCT−']},
+ {id:'m9',lvl:3,min:5,ch:8,title:'Сбивка по кнопке',goal:'Барабанная дробь, только когда вы захотите.',
+  steps:['На сетке (NOTES) снейр на шаг 16: 2-я верхнего ряда, потом 16-я нижнего.','На FEEL для шага 16: [k:KNOB 2] X4, [k:KNOB 1] до FILL.','Держите [b:GLO] + держите [w:F4] — играет сбивка. Отпустили — обычный бит.'],
+  recall:['Как сыграть сбивку?','Держать GLO + F4']},
+ {id:'m10',lvl:3,min:5,ch:8,title:'P-lock',goal:'Своя настройка звука на одном шаге.',
+  steps:['Барабаны, [b:SEQ] — сетка.','Зажмите клавишу шага 13 и крутите [k:KNOB 1] — меняется только этот шаг.','Сделайте ещё лок на шаге 7.','Убрать лок: зажать шаг + тап [b:EDIT].'],
+  recall:['Как убрать p-lock?','Зажать шаг + тап EDIT']},
+ {id:'m10b',lvl:3,min:5,ch:8,title:'Автоматизация',goal:'Ручка сама крутится каждый круг.',
+  steps:['[b:PLAY], дорожка с басом, [b:HOME].','[b:REC] и плавно крутите [k:KNOB 1] вверх-вниз весь круг.','[b:REC] — стоп. Движение повторяется само.','Убрать: [b:SEQ], [k:SELECT] до AUTOMATION, [k:KNOB 4] ниже минимума до DELETE, [b:OCT+].'],
+  recall:['Как записать движение ручки?','REC во время игры и крутить ручку']},
+ {id:'m11',lvl:3,min:4,ch:16,title:'Эффекты вживую',goal:'Ди-джейские приёмы слоем FX.',
+  steps:['[b:PLAY]. Держите [b:FX] + держите [w:E4] — «магнитофон остановился».','[w:G3] — заикание. [w:C5] — даб-эхо.','Держа [b:FX], держите 6-ю клавишу верхнего ряда — без барабанов. Отпустили — вернулись.'],
+  recall:['Где «остановка магнитофона»?','FX + E4']},
+ {id:'m12',lvl:3,min:6,ch:7,title:'Живая запись и TAKE',goal:'Записывать вживую и ловить удачные куски.',
+  steps:['Мелодическая дорожка, [b:PLAY].','Поиграйте пару кругов без записи.','Понравилось — сразу [b:HOME] + [b:SAVE]: TAKE KEPT.','Ещё слой: [b:REC], сыграйте поверх, [b:REC] — стоп.'],
+  recall:['Как сохранить уже сыгранное без записи?','HOME + SAVE (тейк)']},
+ {id:'m12b',lvl:3,min:4,ch:7,title:'Метроном и отсчёт',goal:'Записывать ровно и без спешки.',
+  steps:['[b:HOME] + [b:REC] — слой записи.','[k:KNOB 1] CLICK на REC — щелчки только при записи.','[k:KNOB 2] COUNT-IN 1 BAR — такт отсчёта перед стартом.','[k:KNOB 4] FEEL ON — ноты остаются там, где вы их сыграли.','Закройте слой тапом [b:REC] и запишите партию с отсчётом.'],
+  recall:['Где включается метроном?','HOME + REC, KNOB 1']},
+ {id:'m12c',lvl:3,min:5,ch:7,title:'Свободный тейк (FREE TAKE)',goal:'Сыграть на остановленном FM-1, а потом сохранить сыгранное — темп он угадает сам.',
+  steps:['Остановите музыку ([b:PLAY]). Выберите мелодическую дорожку.','Сыграйте фразу на клавишах, как хочется, без метронома.','Сразу [b:HOME] + [b:SAVE] — откроется экран FREE TAKE.','[k:KNOB 1] — угаданный темп (есть варианты вдвое быстрее и медленнее), [k:KNOB 2] — сколько тактов, [k:KNOB 3] — где «раз».','[b:PLAY] — послушать, [b:OCT+] — оставить, [b:OCT−] — вернуть как было.'],
+  recall:['Как сохранить фразу, сыгранную без запуска музыки?','Остановлено: HOME + SAVE (FREE TAKE)']},
+ {id:'m13',lvl:4,min:5,ch:9,title:'Огибающая',goal:'Короткий упругий бас и плавный пэд.',
+  steps:['Бас, тап [b:ENV].','[k:KNOB 2] DECAY меньше, [k:KNOB 3] SUSTAIN к 0 — бас стал упругим.','Дорожка с пэдом: [k:KNOB 1] ATTACK больше — нота нарастает.','[k:KNOB 4] RELEASE — длина хвоста.'],
+  recall:['Какая ручка даёт плавное появление ноты?','ENV, KNOB 1 — ATTACK']},
+ {id:'m13b',lvl:4,min:6,ch:10,title:'Движки и голоса',goal:'Понять разницу между «инструментами».',
+  steps:['Мелодическая дорожка. Держите [b:EDIT] и тапайте [w:F3], [w:G3], [w:F4], [w:G4] — ANALOG, FM6, WHEEL, GRAIN.','Не отпуская [b:EDIT], [b:OCT−] — вернуть прежний звук.','Тапайте [b:EDIT] до страницы VOICE: POLY — аккорды, MONO — бас, UNI — толстый звук.','[k:KNOB 2] GLIDE — ноты скользят друг к другу.'],
+  recall:['Какой режим голосов даёт толстый звук?','UNI на странице VOICE']},
+ {id:'m13c',lvl:4,min:5,ch:10,title:'Барабанный кит',goal:'Свой характер барабанов.',
+  steps:['Барабаны, тап [b:EDIT], [k:KNOB 1] KIT — послушайте разные киты.','Тапайте [b:EDIT] до LANES: [k:KNOB 1] барабан, [k:KNOB 3] высота, [k:KNOB 4] длина.','Сделайте бочку ниже и длиннее, хэт короче.'],
+  recall:['Где настраивается каждый барабан отдельно?','EDIT → LANES']},
+ {id:'m13d',lvl:4,min:6,ch:10,title:'Нарезка брейка',goal:'Основа джангла: переставить куски брейка.',
+  steps:['Свободная дорожка. Держите [b:EDIT], тап [w:C5] — SLICE.','Понажимайте клавиши: каждая — кусок брейка.','Запишите по шагам, как бас ([b:SEQ], [b:REC]): куски в новом порядке.','Темп 170 ([b:GLO] + [k:SELECT]) и дробь на последних шагах.'],
+  recall:['Как включить нарезку брейка?','Держать EDIT + C5 (SLICE)']},
+ {id:'m14',lvl:4,min:6,ch:9,title:'«Вобл»: LFO на фильтр',goal:'Звук «дышит» в ритм.',
+  steps:['Тап [b:LFO] три раза — страница MOD.','[k:KNOB 1] ROUTE 2, [k:KNOB 4] +50 %.','[k:SELECT] на LFO 2, [k:KNOB 1] SYNC 1/8.','Держите [b:LFO] и крутите ручки на HOME — отпустили, всё вернулось.'],
+  recall:['Какой ROUTE — LFO на фильтр?','ROUTE 2']},
+ {id:'m14b',lvl:4,min:7,ch:12,title:'Эффекты дорожки',goal:'Грязь, «рубилка» и «качание».',
+  steps:['Бас, тап [b:FX]: [k:KNOB 1] DIST — немного грязи.','[b:FX] ещё раз: тип перегруза — SOFT, HARD, FOLD, CRUSH, FUZZ.','Пэд: [b:FX] до SLICER, [k:KNOB 1] GATE — аккорды рубятся в ритм.','[b:FX] до DUCK: [k:KNOB 1] — дорожка с барабанами, [k:KNOB 2] — глубина.'],
+  recall:['Где «качание» от бочки?','FX → DUCK']},
+ {id:'m14c',lvl:4,min:6,ch:13,title:'Микшер и пространство',goal:'Чтобы всё было слышно и звучало объёмно.',
+  steps:['Тап [b:GLO] — MIXER: [k:KNOB 1] громкость, [k:KNOB 2] панорама выбранной дорожки.','[b:GLO] ещё раз — DELAY: TIME 1/8D, немного MIX.','[b:GLO] ещё раз — REVERB: SPRING.','На [b:FX] нужной дорожки добавьте посыл в эхо или реверб.','Последняя страница [b:GLO] — SWING+ около 50 %.'],
+  recall:['Где общий свинг?','Последняя страница GLO, SWING+']},
+ {id:'m15',lvl:4,min:6,ch:5,title:'Лад и аккорды',goal:'Играть без фальши и аккордами одной клавишей.',
+  steps:['Мелодическая дорожка, тап [b:SEL].','[k:KNOB 2] MIN. Держите [b:SEL] + тап [w:A3] — ля минор.','[k:KNOB 3] WHITE — нижний ряд играет только ноты лада.','Тап [b:SEL] ещё раз, [k:KNOB 1] DIA7 — аккорд одной клавишей.'],
+  recall:['Как сделать ля минор?','SEL: KNOB 2 = MIN, держать SEL + A3']},
+ {id:'m16',lvl:4,min:5,ch:5,title:'Аккорды + мелодия (SOLO)',goal:'Аккорды левой рукой, соло правой.',
+  steps:['Тап [b:SEL], [k:KNOB 3] на SOLO.','Нижний ряд — аккорды (если на CHORD включён DIA7).','Верхний ряд — мелодия по ладу. 4-я клавиша верхнего ряда — тоника.','С [b:ARP] на UP: аккорды идут в арпеджио, сверху играете соло.'],
+  recall:['Где тоника в режиме SOLO?','4-я клавиша верхнего ряда (C♯4)']},
+ {id:'m16c',lvl:4,min:5,ch:13,title:'Стерео-эхо и «перебор» аккорда',goal:'Широкое эхо и аккорды, которые звучат как гитарный перебор.',
+  steps:['Тап [b:GLO] до страницы DELAY. [k:PRESETS] — MODE: MONO, STEREO или PING (эхо скачет слева направо).','Поставьте PING и добавьте эхо на клавишных: [b:FX] → DELAY, посыл побольше.','Тап [b:SEL] два раза — CHORD. Найдите STRUM: ноты аккорда идут одна за другой.','Попробуйте STRUM DOWN, UP и ALT с разной задержкой (1–100 мс).'],
+  recall:['Какой режим эха скачет из стороны в сторону?','GLO → DELAY, MODE = PING']},
+ {id:'m16b',lvl:4,min:6,ch:5,title:'Бас следует за аккордами',goal:'Одна басовая линия под любые аккорды.',
+  steps:['Аккорды — на одной дорожке, бас — на другой.','Дорожка с басом: тап [b:SEL] три раза — FOLLOW.','FOLLOW — номер дорожки с аккордами, MODE — SCALE.','[b:PLAY] и меняйте аккорды: бас перестраивается сам.'],
+  recall:['Где включается следование за аккордами?','SEL три раза → FOLLOW']},
+ {id:'m17',lvl:5,min:6,ch:14,title:'Вариант паттерна',goal:'Сделать «вариант 2» и переключаться.',
+  steps:['[b:SEQ], [k:SELECT] до SONG.','[k:KNOB 1] на позицию A, [k:KNOB 2] до COPY+, [b:OCT+] — копия легла в B.','Поменяйте в копии пару нот.','Переключайтесь: [k:KNOB 1] позиция, [b:OCT+].'],
+  recall:['Как сделать вариант паттерна?','SEQ → SONG, KNOB 2 = COPY+, OCT+']},
+ {id:'m18',lvl:5,min:8,ch:14,title:'Песня',goal:'Трек с началом и концом.',
+  steps:['На SONG у 2–3 дорожек по 2–4 позиции.','[k:KNOB 3] — сколько раз повторять каждую.','[k:KNOB 4] ONCE.','[b:GLO] + [b:PLAY] — трек сыграет с начала и остановится.'],
+  recall:['Как сыграть трек один раз и остановиться?','SONG = ONCE']},
+ {id:'m18b',lvl:5,min:7,ch:15,title:'Живое выступление',goal:'Переключать части точно в долю.',
+  steps:['Нужны 2+ позиции у дорожек (миссия «Вариант паттерна»).','[b:PLAY], затем [b:HOME] + [b:ARP] — слой PERFORM закреплён.','Нижний ряд: 1-я — позиция A, 2-я — B. Переход случится в конце круга.','Верхний ряд — мьют дорожек в нужный момент.','Крутаните [k:KNOB 2] — «бросок» в реверб.','Сцена: [k:PRESETS] на SCENE, [b:SAVE] + клавиша — сохранить, тап — вызвать.'],
+  recall:['Как закрепить слой PERFORM?','HOME + ARP']},
+ {id:'m19',lvl:5,min:4,ch:17,title:'Сохранить проект',goal:'Не потерять удачный трек.',
+  steps:['Стоп. Тап [b:SAVE], [k:SELECT] до PROJECT.','[k:KNOB 1] — слот, [k:KNOB 4] SAVE, [b:OCT+].','Имя «телефонным» набором, [b:OCT+].'],
+  recall:['Где сохраняются проекты?','SAVE → страница PROJECT']},
+ {id:'boss',lvl:5,min:10,ch:0,boss:true,title:'Босс: луп за 10 минут',goal:'Всё вместе, с нуля и на время.',
+  steps:['Новый проект (SAVE → PROJECT → пустой слот → NEW).','Бит: бочка, снейр, хэт.','Бас по шагам или вживую с TAKE.','Оживить: дробь, шанс или p-lock.','Один эффект вживую (FX или GLO).','Сохранить проект.'],
+  recall:['Как создать новый проект?','SAVE → PROJECT, пустой слот, KNOB 3 NEW, OCT+']},
+ {id:'a1',lvl:6,min:8,ch:11,title:'FM-звук с нуля',goal:'Понять FM на одном синусе.',
+  steps:['Дорожка с FM6. Держите [b:EDIT], [w:F5], затем [b:OCT+] — чистый синус.','Тапните [b:EDIT] три раза — OPERATOR. [k:PRESETS] — оператор 2.','[k:KNOB 1] OUTPUT 60 — звук стал ярче.','[k:SELECT] до ENV 2: LEVEL 3 в 0, RATE 3 около 60 — яркость угасает.','Раздел TONE: [k:KNOB 2] RATIO 14 — колокол. Сохраните в USER.'],
+  recall:['С чего начать FM-звук с нуля?','EDIT + F5 (INIT), OCT+']},
+ {id:'a2',lvl:6,min:6,ch:9,title:'Свои связки модуляции',goal:'Звук, который каждый раз чуть разный.',
+  steps:['Тап [b:LFO] три раза — MOD.','[k:KNOB 1] ROUTE 8 — свободный слот.','SOURCE RAND, DEST CUT, AMOUNT +60 % — каждая нота своей яркости.','ROUTE 9: SOURCE VEL, DEST AMP — громкость от силы нажатия.'],
+  recall:['Какой источник даёт случайность на каждой ноте?','RAND']},
+ {id:'a2b',lvl:6,min:5,ch:20,title:'Экран FM-1 на компьютере',goal:'Большой экран и управление FM-1 мышкой — удобно учиться.',
+  steps:['FM-1 по USB, Skiff Editor в Chrome или Edge → Connect.','Вкладка Screen → Start. Редактор сделает бэкап и перезапустит FM-1 — музыка сохранится.','Поставьте галочку Controls: вокруг экрана появятся кнопки и ручки FM-1. Правый клик держит кнопку (например, HOME для SHIFT).','Кнопка Full screen — во весь экран.'],
+  recall:['Где включить большой экран FM-1?','Skiff Editor → вкладка Screen → Start']},
+ {id:'a3',lvl:6,min:5,ch:20,title:'Бэкап на компьютер',goal:'Не потерять музыку при смене прошивки.',
+  steps:['FM-1 по USB, откройте Skiff Editor в Chrome или Edge, Connect.','Save backup — сохраните файл.','Посмотрите вкладки Sound и Mixer: ползунки двигаются вместе с ручками FM-1.'],
+  recall:['Как сделать бэкап?','Skiff Editor → Save backup']},
+ {id:'a4',lvl:6,min:8,ch:20,title:'Свой сэмпл и брейк',goal:'Ваш звук на клавишах FM-1.',
+  steps:['Редактор → Samples, слот USR1: Choose files (WAV до ~7 с) или Record.','Обрежьте тишину, Upload.','На FM-1: дорожка с SAMPLE, [b:EDIT], [k:KNOB 1] на USR1.','Для брейка: движок SLICE, SOURCE USR1.'],
+  recall:['Сколько звука влезает в слот?','Около 7 секунд']},
+ {id:'a5',lvl:6,min:5,ch:19,title:'MIDI-клавиатура',goal:'Если есть контроллер: играть и крутить с него.',
+  steps:['Подключите клавиатуру по USB: канал = номер дорожки.','Меню → MIDI → MIDI LEARN → [b:OCT+].','Поверните ручку на FM-1, затем на контроллере — связаны. [b:OCT+] — готово.'],
+  recall:['Как привязать ручку контроллера?','Меню → MIDI → MIDI LEARN']}
+];
+var byId = {}; M.forEach(function(m){ byId[m.id]=m; });
+var SLEVELS = [
+  {n:1, title:'Ступень 1 · Ритм', c:'var(--p2)'},
+  {n:2, title:'Ступень 2 · Гармония', c:'var(--p3)'},
+  {n:3, title:'Ступень 3 · Звук и атмосфера', c:'var(--p4)'},
+  {n:4, title:'Ступень 4 · Аранжировка', c:'var(--p5)'},
+  {n:6, title:'Ступень 5 · Живой джем', c:'var(--p2)'},
+  {n:5, title:'Ступень 6 · Свои треки', c:'var(--p1)'}
+];
+var YT='https://www.youtube.com/results?search_query=';
+var SCH = [
+ {id:'s1',lvl:1,min:6,title:'Четыре на пол',goal:'Основа хауса и техно: бочка на каждую долю.',
+  listen:'Включите любой хаус-трек и слушайте только барабаны: бочка ровно на каждый счёт, хлопок на 2 и 4, открытый хэт между долями.',yt:'four on the floor drum pattern',
+  steps:['Новый проект, темп 124 ([b:GLO] + [k:SELECT]).','Бочка: шаги 1, 5, 9, 13.','Хлопок (CP) или снейр: шаги 5 и 13.','Открытый хэт (OH): шаги 3, 7, 11, 15.','Закрытый хэт на все 16 шагов, на FEEL разная сила: громче на долях, тише между ними.'],
+  recall:['Где стоит открытый хэт в хаусе?','Между долями: шаги 3, 7, 11, 15']},
+ {id:'s2',lvl:1,min:6,title:'Качающий хип-хоп грув',goal:'Ленивый, «раскачанный» бит.',
+  listen:'В хип-хопе и лоу-фае бочка ходит неровно, а снейр твёрдо стоит на 2 и 4. Прислушайтесь, как хэты слегка «хромают» — это свинг.',yt:'boom bap drum pattern tutorial',
+  steps:['Темп 88–92.','Бочка: шаги 1, 8, 11. Снейр: 5 и 13.','Хэты на нечётных шагах: 1, 3, 5 … 15.','[b:SEQ] → PATTERN, [k:KNOB 3] SWING около 55–60 %.','На FEEL снейрам NUDGE +6…+10 — чуть позже сетки.'],
+  recall:['Что делает свинг?','Каждый второй шаг опаздывает — ритм «раскачивается»']},
+ {id:'s3',lvl:1,min:5,title:'Полиметрия',goal:'Луп, который не надоедает: дорожки разной длины.',
+  listen:'В минимал-техно и IDM разные партии часто «расходятся» и снова сходятся — бит звучит живым, хотя никто ничего не меняет.',yt:'polymeter drum programming',
+  steps:['Бочка и снейр на одной дорожке: длина 16.','На другой дорожке перкуссия (римшот или ковбелл) из 3–4 ударов.','[b:SEQ] → PATTERN: длина этой дорожки 12, потом 7.','Слушайте 8 кругов: рисунок всё время сдвигается.'],
+  recall:['Как сделать, чтобы партии «расходились»?','Разная длина паттерна у дорожек (PATTERN, KNOB 1)']},
+ {id:'s4',lvl:1,min:6,title:'Брейкбит',goal:'Ломаный бит вместо ровного.',
+  listen:'В брейкбите бочка уходит со счёта, а между основными ударами слышны тихие «призрачные» снейры.',yt:'breakbeat drum programming tutorial',
+  steps:['Темп 130–135.','Бочка: шаги 1 и 11. Снейр: 5 и 13.','Призрачные снейры на 10 и 15: на FEEL сила 30–50.','Хэты на нечётных шагах, шанс 80 % на паре из них.'],
+  recall:['Что такое «призрачный» удар?','Очень тихий удар между основными']},
+ {id:'s5',lvl:1,min:8,title:'Джангл 170',goal:'Нарезанный брейк, дроби и глубокий саб.',
+  listen:'Джангл — это быстрые нарезанные живые барабаны поверх медленного, гулкого баса. Слушайте, как куски брейка переставлены и «заикаются».',yt:'jungle break chopping tutorial',
+  steps:['Темп 170. Свободная дорожка: держите [b:EDIT], тап [w:C5] — SLICE.','Куски идут по клавишам подряд, чередуя ряды: низ 1, верх 1, низ 2, верх 2… Запишите их по шагам в этом порядке ([b:SEQ], затем [b:REC]), потом переставьте 3–4 куска.','На шагах 15–16: дробь X3–X4.','Бас: SUB BASS, длинные ноты по 1–2 такта.','[b:FX] + [w:G3] в конце фразы — заикание.'],
+  recall:['Какой темп типичен для джангла?','Около 170 BPM']},
+ {id:'s5b',lvl:1,min:12,title:'Свой брейк: рисунок и грязь',goal:'Собрать ломаный бит в духе классических брейков — из синтезированных барабанов.',
+  listen:'«Грязь» и плотность старых брейков дают четыре вещи: ломаный рисунок с тихими ударами, живое отклонение от сетки, перегруз и ощущение старой записи. Всё это есть в Skiff.',yt:'how to program a breakbeat from scratch',
+  steps:['Барабанная дорожка, темп 170, на PATTERN длина 32.','Такт 1. Бочка: 1, 3, 11. Снейр громко: 5, 13; тихо (сила 30–50): 8, 10. Хэт: нечётные шаги, на 7 и 15 открытый.','Такт 2. Бочка: 17, 19, 27, 28. Снейр громко: 21, 29; тихо: 24, 26, 31. Шаг 32 — снейр с дробью X3.','Оживить (FEEL): тихим снейрам NUDGE +4…+8, шанс 70–80 % на 2–3 из них.','Грязь: [b:FX] — DIST на CRUSH или FUZZ немного, TONE в плюс, немного REVERB.','Держите [b:FX] + [w:E5] — «старая пластинка». Понравилось — сохраните проект.'],
+  recall:['Что даёт брейку «живость»?','Тихие удары, сдвиги NUDGE и шанс']},
+ {id:'s5c',lvl:1,min:10,title:'Свой брейк: ресэмплинг',goal:'Превратить свой бит в сэмпл и нарезать его, как настоящий брейк.',
+  listen:'Ресэмплинг — записать свой же звук и загрузить обратно как сэмпл. Так брейк становится полностью вашим: можно играть на выступлениях и выпускать без вопросов с правами.',yt:'resampling drums tutorial',
+  steps:['Заглушите все дорожки, кроме барабанов (держа [b:GLO], тапайте клавиши верхнего ряда).','Запишите звук FM-1 на компьютер по USB или на телефон — 2 такта (при 170 BPM это около 3 секунд).','Skiff Editor → Samples → USR1 → Choose files. Обрежьте точно по 2 такта, Upload.','Свободная дорожка: держите [b:EDIT] + [w:C5] (SLICE), затем тап [b:EDIT] — SOURCE на USR1.','Режьте и переставляйте куски, как в уроке «Джангл 170».'],
+  recall:['Что такое ресэмплинг?','Записать свой звук и загрузить обратно как сэмпл']},
+ {id:'s6',lvl:2,min:5,title:'Настроение лада',goal:'Услышать, как лад меняет эмоцию.',
+  listen:'Минор звучит задумчиво или мрачно, мажор — светло. Пентатоника — «безопасная»: в ней почти нечему звучать фальшиво.',yt:'major vs minor scale explained',
+  steps:['Мелодическая дорожка, [b:SEL], [k:KNOB 3] WHITE.','[k:KNOB 2] MIN — сыграйте простую мелодию по нижнему ряду.','Та же мелодия в MAJ, затем в MPEN.','Выберите лад, который ближе по настроению к вашей музыке.'],
+  recall:['Какой лад самый «безопасный»?','Пентатоника']},
+ {id:'s7',lvl:2,min:6,title:'Четыре аккорда',goal:'Классическая минорная последовательность.',
+  listen:'Огромная часть поп- и электронной музыки держится на 3–4 аккордах по кругу. Попробуйте на слух уловить, когда в любимом треке меняется аккорд.',yt:'minor chord progression beginner',
+  steps:['[b:SEL]: MIN, тоника A ([b:SEL] + [w:A3]), QUANTIZE WHITE.','[b:SEL] ещё раз: CHORD DIA3.','В режиме WHITE [w:C4] — первая ступень лада. Сыграйте по такту: [w:C4] → [w:A4] → [w:E4] → [w:B4].','Запишите вживую с метрономом или через TAKE.'],
+  recall:['Где первая ступень лада в режиме WHITE?','C4 — 5-я клавиша нижнего ряда']},
+ {id:'s8',lvl:2,min:5,title:'Тёплые септаккорды',goal:'Мягкая, «джазовая» окраска.',
+  listen:'Мягкие аккорды с «лишней» нотой — фирменная краска даунтемпо и нео-соула. Сравните: обычный аккорд звучит прямо, септаккорд — мечтательно.',yt:'minor 7th chords downtempo',
+  steps:['Те же аккорды, что в прошлом уроке, но CHORD DIA7.','VOICING OPEN — шире.','Звук PAD или клавишные, ATTACK длиннее.','Сравните DIA3 и DIA7 на слух.'],
+  recall:['Как включить септаккорды?','SEL → CHORD, KNOB 1 = DIA7']},
+ {id:'s9',lvl:2,min:6,title:'Бас под аккорды',goal:'Бас, который держит гармонию.',
+  listen:'Самый простой бас играет основной тон аккорда. Интереснее — когда он иногда прыгает на октаву или на «пятую» ноту.',yt:'how to write a bassline to chords',
+  steps:['Бас по шагам: основной тон каждого аккорда, по такту.','Добавьте прыжки на октаву выше на слабых шагах.','Включите FOLLOW ([b:SEL] три раза), MODE SCALE.','Поменяйте аккорды и послушайте, как бас подстраивается.'],
+  recall:['Какую ноту бас играет чаще всего?','Основной тон аккорда']},
+ {id:'s10',lvl:2,min:6,title:'Мелодия-вопрос и ответ',goal:'Запоминающийся мотив из 3–5 нот.',
+  listen:'Хорошие мелодии часто строятся как диалог: короткая фраза-«вопрос» и похожая фраза-«ответ», которая заканчивается на главной ноте.',yt:'call and response melody writing',
+  steps:['[b:SEL]: [k:KNOB 3] SOLO — мелодия на верхнем ряду.','Придумайте «вопрос»: 3–5 нот, 2 такта.','«Ответ»: те же ритм и начало, но конец на тонике (4-я клавиша верхнего ряда).','Запишите через TAKE.'],
+  recall:['Где тоника в режиме SOLO?','4-я клавиша верхнего ряда']},
+ {id:'s11',lvl:3,min:5,title:'Пэд-подушка',goal:'Мягкий фон, который «держит» трек.',
+  listen:'Пэд почти не замечаешь, но без него трек звучит пусто. Он медленно появляется и долго тает.',yt:'how to make warm pad synth',
+  steps:['Звук из списка PAD.','[b:ENV]: ATTACK длинный, RELEASE длинный.','[b:FX]: посыл в REVERB побольше, немного CHORUS.','Длинные аккорды по 2 такта.'],
+  recall:['Какие две ручки делают пэд мягким?','ATTACK и RELEASE']},
+ {id:'s12',lvl:3,min:8,title:'Даунтемпо-грув',goal:'Расслабленный тёплый бит в духе Bonobo.',
+  listen:'Даунтемпо: спокойный темп, мягкие барабаны с живым свингом, тёплые клавишные, пространство и немного «пыли» старой записи.',yt:'downtempo beat production tutorial',
+  steps:['Темп 90–95, свинг 55 %.','Мягкий кит, вместо снейра римшот.','Клавишные (электропиано FM6 или WHEEL), септаккорды.','[b:GLO] → DELAY 1/8D, немного эха на клавишных.','[b:FX] + [w:E5] — пластиночная «пыль».'],
+  recall:['Какой темп у даунтемпо?','Примерно 85–100 BPM']},
+ {id:'s13',lvl:3,min:6,title:'Reese-бас',goal:'Толстый «живой» бас драм-н-бейса.',
+  listen:'Reese — гудящий бас, который будто медленно «плывёт». Его делают двумя слегка расстроенными пилами.',yt:'reese bass tutorial',
+  steps:['ANALOG, две пилы, небольшая расстройка.','VOICE: MONO или UNI.','Фильтр приоткрыт, LFO медленно (SYNC 1 BAR) на CUT.','[b:FX] DIST: немного FUZZ или HARD.'],
+  recall:['Из чего делают reese-бас?','Две слегка расстроенные пилы']},
+ {id:'s13b',lvl:3,min:8,title:'Рецепты звуков',goal:'Из скучного пресета — свой звук по схеме.',
+  listen:'Пресет в одиночку и на динамике всегда звучит бедно. Слушайте в наушниках и стройте звук всегда в одном порядке: основа → яркость → форма → движение → толщина → пространство.',yt:'synth sound design basics',
+  steps:['Наденьте наушники.','Жирный бас: SUB BASS или SQR BASS. [b:EDIT] до VOICE — MONO. На [b:HOME] [k:KNOB 1] пониже. [b:FX] — немного DIST, реверба нет.','Эмбиент-пэд: SOFT PAD. [b:ENV] — ATTACK и RELEASE длинные. [b:FX] — много REVERB, немного CHORUS.','Движение: [b:LFO] три раза → ROUTE 2, немного AMOUNT; на LFO 2 SYNC 1 BAR — пэд «дышит».','Лучший из звуков сохраните в USER и отметьте звёздочкой.'],
+  recall:['В каком порядке строить звук?','Основа → яркость → форма → движение → толщина → пространство']},
+ {id:'s13c',lvl:3,min:10,title:'Библиотека DX7',goal:'Тысячи классических FM-звуков вместо заводских пресетов.',
+  listen:'Электропиано, басы и колокола DX7 — звук 80-х, который до сих пор звучит в даунтемпо, хаусе и попе. Бесплатные банки ищите по запросу «DX7 sysex banks».',yt:'DX7 electric piano sound',
+  steps:['Скачайте на компьютер бесплатный банк DX7 — файл .syx.','FM-1 по USB, Skiff Editor в Chrome или Edge → Connect → вкладка 6-OP FM.','Import SysEx → ваш файл: обычно внутри 32 звука.','Выберите звук и Send to track — он заиграет на выбранной дорожке. Поиграйте на FM-1.','Понравился — на FM-1 сохраните в USER (на все свои звуки 32 слота).','Остальное держите в библиотеке редактора (вкладка Library) на компьютере и меняйте набор под каждый трек.'],
+  recall:['Сколько своих звуков хранится на самом FM-1?','32 слота USER, остальное — в библиотеке на компьютере']},
+ {id:'s14',lvl:3,min:5,title:'Даб-пространство',goal:'Эхо и пружинный реверб как инструмент.',
+  listen:'В дабе эффекты — это часть игры: удар снейра улетает в эхо, звук то пропадает, то возвращается.',yt:'dub delay throws tutorial',
+  steps:['[b:GLO] → REVERB SPRING, DELAY 1/4 с заметным FEEDBACK.','Держите [b:FX] + [w:C5] на снейре в конце фразы — эхо тянется.','Глушите и возвращайте бас (слой GLO).'],
+  recall:['Где даб-эхо в слое FX?','FX + C5']},
+ {id:'s15',lvl:4,min:6,title:'Структура трека',goal:'Вступление, развитие, яма, кульминация, конец.',
+  listen:'Отметьте в любимом треке, когда вступает бочка, когда она пропадает и когда всё возвращается. Обычно части кратны 8 тактам.',yt:'electronic music arrangement basics',
+  steps:['План: интро 8 тактов, основа 16, яма 8, основа 16, концовка 8.','[b:SEQ] → SONG: интро — без бочки, яма — без барабанов.','SONG ONCE и прослушайте целиком.'],
+  recall:['Кратно скольким тактам обычно меняются части?','8']},
+ {id:'s16',lvl:4,min:5,title:'Напряжение и сброс',goal:'Чтобы возвращение бита «било».',
+  listen:'Перед возвращением бита звук часто становится тоньше или пропадает бочка — и удар после этого ощущается сильнее.',yt:'build up and drop techniques',
+  steps:['За такт до смены части: [b:FX] + [w:D4] — убираем низ.','Последние 2 шага — сбивка ([b:GLO] + [w:F4]).','Или глушите бочку на такт и возвращайте точно на счёт «раз».'],
+  recall:['Какой эффект «убирает низ»?','FX + D4 (HPF)']},
+ {id:'s17',lvl:4,min:5,title:'Вариации без скуки',goal:'Каждые 4 такта что-то новое — без ручной работы.',
+  listen:'Слушайте любимый луповый трек: мелкие детали меняются постоянно, хотя основа одна.',yt:'trig conditions elektron tutorial',
+  steps:['Перкуссия: условия 1:2 и 3:4.','Хэты: шанс 70–90 %.','Один удар бочки с условием 4:4 — лишний акцент раз в 4 такта.'],
+  recall:['Что значит условие 3:4?','Шаг играет только на 3-м круге из каждых 4']},
+ {id:'j1',lvl:6,min:10,title:'Брейк на две дорожки',goal:'«Скелет» и «воздух» — две части одного брейка на разных дорожках.',
+  listen:'На живых сетах части бита часто вводят по очереди: сначала хэты и тихие удары, потом бочка и снейр. Так слушатель чувствует нарастание. Сэмпл один на обе дорожки — лишней памяти не нужно.',yt:'live jam drum layers breakbeat',
+  steps:['Дорожка A: держите [b:EDIT] + [w:C5] (SLICE), тап [b:EDIT] — SOURCE: ваш брейк. Затем [b:SEQ], [b:REC] и все куски по порядку.','Дорожка B: то же самое — тот же брейк целиком.','На A: [k:PRESETS] — курсор на шаг с хэтом или тихим ударом, при включённом [b:REC] тап [b:EDIT] — шаг стёрт. Оставьте бочки и снейры.','На B наоборот: сотрите бочки и снейры, оставьте «воздух».','[b:REC] выключить, [b:PLAY]: вместе — целый брейк. Ошиблись — зажмите [b:SAVE].'],
+  recall:['Как стереть шаг под курсором?','Включить REC и тапнуть EDIT']},
+ {id:'j2',lvl:6,min:6,title:'Постепенный вход',goal:'Вводить и уводить части ровно в такт.',
+  listen:'Посмотрите любой живой сет на грувбоксе: артист наслаивает партии по одной, каждые 4–8 тактов.',yt:'groovebox live performance build up',
+  steps:['[b:HOME] + [b:ARP] — слой PERFORM закреплён.','[k:SELECT] — LAUNCH на BAR: всё срабатывает с начала следующего такта.','Заглушите всё, кроме «воздуха»: тапы по клавишам верхнего ряда с номерами дорожек.','Каждые 4–8 тактов возвращайте по одной: «воздух» → «скелет» → бас → пэд.','Затем уводите в обратном порядке.'],
+  recall:['Как сделать, чтобы мьют срабатывал ровно в такт?','PERFORM, LAUNCH = BAR']},
+ {id:'j3',lvl:6,min:8,title:'Сцены для джема',goal:'Переключать всю аранжировку одним нажатием.',
+  listen:'Сцены — это ваш сетлист внутри одного трека: вступление, основа, кульминация.',yt:'performance scenes groovebox',
+  steps:['В PERFORM [k:PRESETS] на SCENE.','Настройте мьюты: только «воздух» и пэд. Держите [b:SAVE] + 1-я клавиша нижнего ряда — сцена 1.','Добавьте «скелет» брейка — [b:SAVE] + 2-я клавиша.','Всё плюс бас — [b:SAVE] + 3-я клавиша.','Играйте: тап 1 → 2 → 3 → 2 → 1. Переход случится ровно на такт.'],
+  recall:['Как сохранить сцену?','В PERFORM: держать SAVE + клавиша нижнего ряда']},
+ {id:'j4',lvl:6,min:8,title:'Тема 1 → тема 2',goal:'Перейти от одной темы к другой, не останавливаясь.',
+  listen:'Переход звучит естественно, если перед ним есть короткое напряжение: сбивка, фильтр или пауза (см. урок «Напряжение и сброс»).',yt:'live jam transitions groovebox',
+  steps:['Вариант брейка: [b:SEQ], [k:SELECT] до SONG, [k:KNOB 2] COPY+, [b:OCT+] — копия в позицию B. Переставьте в ней куски, добавьте дроби.','То же для баса: вариант B с другой нотой или ритмом.','В PERFORM [k:PRESETS] на TRACK. Дорожку выбирает [k:ALGORITHM], 2-я клавиша нижнего ряда — позиция B.','За такт до смены: [b:FX] + [w:D4] (убрать низ) или сбивка [b:GLO] + [w:F4]. Переключите дорожки на B.','Тема 2 сыграла — вернитесь к теме 1 (1-я клавиша) или уходите в концовку сценой 1.'],
+  recall:['Чем подготовить переход?','Сбивкой, фильтром (FX + D4) или паузой']},
+ {id:'j0',lvl:6,min:8,title:'FM-1 + PO-33 вместе',goal:'Pocket Operator играет в одном темпе с FM-1 (Skiff 2.7).',
+  listen:'С версии 2.7 FM-1 умеет посылать синхроимпульсы для Pocket Operator: по одному каналу выхода идёт синхро, по другому — музыка в моно.',yt:'pocket operator sync tutorial',
+  steps:['На FM-1: меню → AUDIO → SYNC OUT — выберите канал для синхро (LEFT). По умолчанию функция выключена.','Стерео-кабель 3,5 мм: выход FM-1 → вход PO-33.','На PO-33 включите режим синхронизации SY4 или SY5 (в инструкции PO: FUNCTION + BPM).','[b:PLAY] на FM-1 — PO-33 стартует вместе с ним. Если не стартует — попробуйте SYNC INVERT или другой SYNC PPQN.','Сыграйте 2 минуты: бит и сэмплы на PO-33, бас и аккорды на FM-1.'],
+  recall:['Где включается синхро для Pocket Operator?','Меню → AUDIO → SYNC OUT']},
+ {id:'s18',lvl:6,min:8,title:'Живой сет 5 минут',goal:'Сыграть трек вживую от начала до конца.',
+  listen:'Посмотрите любое живое выступление на грувбоксе: заметьте, как часто артист переключает части и глушит дорожки.',yt:'groovebox live jam',
+  steps:['3 сцены в PERFORM: интро, основа, яма.','Запишите звук FM-1 на телефон.','Сыграйте 5 минут, не останавливаясь, даже если ошиблись.','Переслушайте и отметьте один удачный и один неудачный момент.'],
+  recall:['Как сохранить сцену?','В PERFORM: SAVE + клавиша']},
+ {id:'s19',lvl:5,min:8,title:'Разбор трека на слух',goal:'Научиться слышать, из чего сделан трек.',
+  listen:'Возьмите любой любимый трек. Цель не скопировать его, а понять устройство: что играет и когда.',yt:'how to analyze a song by ear producer',
+  steps:['Темп: стучите [w:G4] в слое [b:GLO] под трек (тап-темп).','Выпишите: барабаны, бас, аккорды, мелодия, фон.','Отметьте по времени, где меняются части.','Соберите на FM-1 похожее настроение своими нотами.'],
+  recall:['Как быстро узнать темп трека?','Тап-темп: GLO + G4']},
+ {id:'s20',lvl:5,min:15,title:'Набросок: джангл',goal:'Минута джангла от начала до конца.',
+  listen:'Вспомните уроки «Джангл 170» и «Reese-бас».',yt:'jungle track from scratch',
+  steps:['Брейк в SLICE, 170 BPM, 2 варианта паттерна.','Саб или reese-бас.','Пэд или вокальный кусок (свой сэмпл).','SONG: интро → брейк → яма → брейк. Сохранить проект.'],
+  recall:['Что главное в джангле?','Нарезанный брейк и глубокий бас']},
+ {id:'s21',lvl:5,min:15,title:'Набросок: даунтемпо',goal:'Тёплый трек в духе Bonobo.',
+  listen:'Вспомните уроки «Даунтемпо-грув» и «Тёплые септаккорды».',yt:'downtempo track from scratch',
+  steps:['90 BPM, мягкий кит, свинг.','Септаккорды на клавишных, бас по аккордам.','Мелодия-вопрос и ответ.','Пространство: DELAY 1/8D, пыль VINYL. SONG и сохранение.'],
+  recall:['Чем даунтемпо отличается от хауса?','Медленнее, мягче, больше пространства и свинга']},
+ {id:'s22',lvl:5,min:12,title:'Набросок: хаус',goal:'Танцевальный луп, который хочется слушать дальше.',
+  listen:'Вспомните урок «Четыре на пол».',yt:'house track from scratch',
+  steps:['124 BPM, четыре на пол.','Бас на слабых долях, DUCK от бочки.','Аккорды-стэбы короткими нотами.','Вариации условиями, сбивка перед сменой части.'],
+  recall:['Что даёт «качание» в хаусе?','DUCK от бочки']},
+ {id:'s23',lvl:5,min:15,title:'Свой трек',goal:'Довести одну идею до конца и записать.',
+  listen:'Выберите лучший из своих набросков.',yt:'how to finish a track',
+  steps:['Доведите структуру до 2–3 минут.','Сведите громкости в микшере.','Запишите звук по USB или на телефон.','Покажите кому-нибудь — это тоже часть обучения.'],
+  recall:['Что важнее всего на этом этапе?','Довести трек до конца']}
+];
+SCH.forEach(function(s){ s.sc=true; byId[s.id]=s; });
+
+
+/* ---------- storage ---------- */
+var KEY='skiff-trainer-v1';
+var S = {done:{}, xp:0, streak:0, last:'', carry:[], scarry:[]};
+try { var raw = localStorage.getItem(KEY); if (raw) { var o = JSON.parse(raw); if (o && typeof o === 'object') S = Object.assign(S, o); } } catch(e){}
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){} }
+function today(){ var d=new Date(); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
+function yesterday(){ var d=new Date(Date.now()-864e5); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
+function bumpStreak(){ var t=today(); if (S.last===t) return; S.streak = (S.last===yesterday()) ? S.streak+1 : 1; S.last=t; }
+function paintStats(){ document.getElementById('xp').textContent = S.xp+' XP'; document.getElementById('streak').textContent = '🔥 '+(S.last===today()||S.last===yesterday()?S.streak:0); }
+
+/* ---------- helpers ---------- */
+function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+function chips(s){
+  return esc(s).replace(/\[(b|k|w|x):([^\]]+)\]/g,function(_,t,v){ var cls={b:'',k:' class="k"',w:' class="w"',x:' class="x"'}[t]; return '<kbd'+cls+'>'+v+'</kbd>'; });
+}
+function lvlColor(n){ return LEVELS[n-1].c; }
+function nextMission(skip){ for (var i=0;i<M.length;i++){ if(!S.done[M[i].id] && (!skip||skip.indexOf(M[i].id)<0)) return M[i]; } return null; }
+var app = document.getElementById('app');
+
+/* ---------- keyboard ---------- */
+var BASE=53;
+var chrom=['F3','F♯3','G3','G♯3','A3','A♯3','B3','C4','C♯4','D4','D♯4','E4','F4','F♯4','G4','G♯4','A4','A♯4','B4','C5','C♯5','D5','D♯5','E5','F5','F♯5','G5'];
+var whiteIdx=[0,2,4,6,7,9,11,12,14,16,18,19,21,23,24,26];
+var blackIdx=[1,3,5,8,10,13,15,17,20,22,25];
+var blackAfter={0:1,1:3,2:5,4:8,5:10,7:13,8:15,9:17,11:20,12:22,14:25};
+(function buildKb(){
+  var W=44,X0=4,Y=40,H=130,BH=80,BW=28;
+  function oc(i){return i<=3?'o3':(i<=10?'o4':'o5');}
+  var s='<svg class="kb" viewBox="0 0 712 176" role="group" aria-label="Клавиатура FM-1: нажимайте клавиши мышкой или на устройстве">';
+  [['Октава 3',0,4,'o3'],['Октава 4',4,11,'o4'],['Октава 5',11,16,'o5']].forEach(function(o){
+    var x1=X0+o[1]*W+2,x2=X0+o[2]*W-2;
+    s+='<path class="ob '+o[3]+'" d="M'+x1+' 32V25H'+x2+'V32"/><text class="ot '+o[3]+'" x="'+((x1+x2)/2)+'" y="18">'+o[0]+'</text>';
+  });
+  whiteIdx.forEach(function(ci,i){
+    var x=X0+i*W,cx=x+(W-2)/2,n=chrom[ci];
+    s+='<rect class="wk" data-i="'+ci+'" id="k'+ci+'" x="'+x+'" y="'+Y+'" width="'+(W-2)+'" height="'+H+'" rx="4"/>';
+    s+='<text class="stn" x="'+cx+'" y="'+(Y+H-36)+'">'+(i+1)+'</text>';
+    s+='<text class="wn'+(n.charAt(0)==='C'?' c':'')+'" x="'+cx+'" y="'+(Y+H-14)+'">'+n+'</text>';
+  });
+  Object.keys(blackAfter).forEach(function(k){
+    var i=+k,ci=blackAfter[k],cx=X0+(i+1)*W-1,n=chrom[ci];
+    s+='<rect class="bk" data-i="'+ci+'" id="k'+ci+'" x="'+(cx-BW/2)+'" y="'+Y+'" width="'+BW+'" height="'+BH+'" rx="3"/>';
+    s+='<text class="bn" x="'+cx+'" y="'+(Y+18)+'">'+n.slice(0,-1)+'</text><text class="bn" x="'+cx+'" y="'+(Y+31)+'">'+n.slice(-1)+'</text>';
+  });
+  s+='</svg>';
+  var w=document.getElementById('kbwrap'); w.innerHTML=s;
+  w.addEventListener('pointerdown',function(e){ var r=e.target.closest('rect[data-i]'); if(!r) return; e.preventDefault(); var n=BASE+(+r.dataset.i); noteOn(n); setTimeout(function(){ noteOff(n); },180); });
+})();
+function keyEl(n){ var i=n-BASE; return (i>=0&&i<=26)?document.getElementById('k'+i):null; }
+function noteOn(n,ts){ var el=keyEl(n); if(el) el.classList.add('on'); if(typeof held!=='undefined') held[idxIn(n)]=true; if(mode==='gm' && !midi) tone(n,0.3); if (quizHandler) quizHandler(n,ts); }
+function noteOff(n){ var el=keyEl(n); if(el) el.classList.remove('on'); if(typeof held!=='undefined') delete held[idxIn(n)]; }
+function clearHints(){ document.querySelectorAll('.kb .hint').forEach(function(e){e.classList.remove('hint');}); }
+
+var dock=document.getElementById('dock'), tog=document.getElementById('dockToggle');
+tog.addEventListener('click',function(){ var m=dock.classList.toggle('min'); tog.textContent=m?'Показать клавиатуру':'Скрыть клавиатуру'; tog.setAttribute('aria-expanded',m?'false':'true'); document.body.style.paddingBottom=m?'90px':''; });
+
+var mstatus=document.getElementById('mstatus'), midi=null;
+function bindMidi(){ var names=[]; midi.inputs.forEach(function(inp){ inp.onmidimessage=onMidi; names.push(inp.name||'MIDI'); }); mstatus.textContent=names.length?('Подключено: '+names.join(', ')):'Устройство не найдено. Проверьте кабель.'; }
+function onMidi(e){ var d=e.data; if(!d||d.length<3) return; var t=d[0]&0xF0; if(t===0x90&&d[2]>0) noteOn(d[1],e.timeStamp); else if(t===0x80||(t===0x90&&d[2]===0)) noteOff(d[1]); }
+document.getElementById('connect').addEventListener('click',function(){
+  if(!navigator.requestMIDIAccess){ mstatus.textContent='Этот браузер не умеет MIDI. Нужен Chrome или Edge на компьютере. Клавиши можно нажимать мышкой.'; return; }
+  mstatus.textContent='Подключение…';
+  navigator.requestMIDIAccess({sysex:false}).then(function(a){ midi=a; bindMidi(); a.onstatechange=bindMidi; })
+  .catch(function(){ mstatus.textContent = (window.self!==window.top) ? 'Внутри claude.ai браузер не даёт страницам доступ к MIDI. Скачайте файл тренажёра и откройте его в Chrome или Edge — там FM-1 подключится. Пока можно нажимать мышкой.' : 'Доступ к MIDI не дан. Разрешите MIDI для страницы (значок слева от адреса) и нажмите ещё раз.'; });
+});
+
+/* ---------- quiz ---------- */
+var quizHandler=null;
+function nm(n){ var names=['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B']; return names[n%12]+(Math.floor(n/12)-1); }
+function makeQuestion(){
+  var r=Math.random(), q;
+  if(r<0.3){ var s=1+Math.floor(Math.random()*16); q={text:'Нажмите клавишу шага '+s,i:whiteIdx[s-1],why:'Шаг '+s+' — '+s+'-я клавиша нижнего ряда ('+chrom[whiteIdx[s-1]]+')'}; }
+  else if(r<0.5){ var t=1+Math.floor(Math.random()*6); q={text:'Слой GLO: какая клавиша даёт соло дорожки '+t+'? Нажмите её',i:whiteIdx[t-1],why:'Соло дорожки '+t+' — '+t+'-я клавиша нижнего ряда'}; }
+  else if(r<0.7){ var u=1+Math.floor(Math.random()*6); q={text:'Слой GLO: какая клавиша глушит дорожку '+u+'? Нажмите её',i:blackIdx[u-1],why:'Мьют дорожки '+u+' — '+u+'-я клавиша верхнего ряда ('+chrom[blackIdx[u-1]]+')'}; }
+  else { var pool=[0,7,19,26,4,8,12,14]; var ci=pool[Math.floor(Math.random()*pool.length)]; q={text:'Нажмите клавишу '+chrom[ci],i:ci,why:chrom[ci]+' подсвечена на схеме'}; }
+  return q;
+}
+function runQuiz(box,count,onDone){
+  var left=count, right=0, miss=0, q=null;
+  var qEl=box.querySelector('.quizq'), fb=box.querySelector('.qfb'), cnt=box.querySelector('.qcnt');
+  function next(){ clearHints(); miss=0; if(left<=0){ quizHandler=null; qEl.textContent='Готово!'; fb.className='qfb ok'; fb.textContent='Верно с первой попытки: '+right+' из '+count; onDone(right); return; } q=makeQuestion(); qEl.textContent=q.text; fb.textContent=''; fb.className='qfb'; cnt.textContent='Вопрос '+(count-left+1)+' из '+count; }
+  quizHandler=function(n){
+    if(!q) return;
+    var i=n-BASE;
+    if(i===q.i){ if(miss===0){ right++; S.xp+=5; paintStats(); save(); } fb.className='qfb ok'; fb.textContent='Верно! '+q.why; left--; q=null; setTimeout(next,900); }
+    else if((n-(BASE+q.i))%12===0){ fb.className='qfb no'; fb.textContent='Нота та же, но октава сдвинута. Нажмите OCT− и OCT+ вместе.'; }
+    else { miss++; fb.className='qfb no'; fb.textContent= miss>=2 ? 'Подсказка: клавиша подсвечена на схеме' : 'Не та клавиша, попробуйте ещё'; if(miss>=2){ var el=document.getElementById('k'+q.i); if(el) el.classList.add('hint'); } }
+  };
+  next();
+}
+
+/* ---------- beep ---------- */
+var actx=null;
+function beep(){ try{ actx=actx||new (window.AudioContext||window.webkitAudioContext)(); [0,0.25].forEach(function(t){ var o=actx.createOscillator(), g=actx.createGain(); o.frequency.value=880; g.gain.setValueAtTime(0.0001,actx.currentTime+t); g.gain.exponentialRampToValueAtTime(0.15,actx.currentTime+t+0.02); g.gain.exponentialRampToValueAtTime(0.0001,actx.currentTime+t+0.2); o.connect(g); g.connect(actx.destination); o.start(actx.currentTime+t); o.stop(actx.currentTime+t+0.22); }); }catch(e){} }
+
+/* ---------- games: ear and rhythm ---------- */
+function ensureCtx(){ try{ actx=actx||new (window.AudioContext||window.webkitAudioContext)(); if(actx.state==='suspended') actx.resume(); }catch(e){} return actx; }
+function tone(n,dur,when){ var c=ensureCtx(); if(!c) return; var t=(when||c.currentTime); var o=c.createOscillator(), g=c.createGain(); o.type='triangle'; o.frequency.value=440*Math.pow(2,(n-69)/12); g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.25,t+0.02); g.gain.exponentialRampToValueAtTime(0.0001,t+dur); o.connect(g); g.connect(c.destination); o.start(t); o.stop(t+dur+0.02); }
+function click(when,hi){ var c=ensureCtx(); if(!c) return; var o=c.createOscillator(), g=c.createGain(); o.frequency.value=hi?1500:1000; g.gain.setValueAtTime(0.0001,when); g.gain.exponentialRampToValueAtTime(hi?0.3:0.18,when+0.003); g.gain.exponentialRampToValueAtTime(0.0001,when+0.05); o.connect(g); g.connect(c.destination); o.start(when); o.stop(when+0.06); }
+function runEar(box,count,onDone){
+  var easy=[60,62,64,65,67,69,71,72], all=[]; for(var n=53;n<=79;n++) all.push(n);
+  var left=count, right=0, target=null, tries=0;
+  var q=box.querySelector('.quizq'), fb=box.querySelector('.qfb'), cnt=box.querySelector('.qcnt'), rep=box.querySelector('.again');
+  function next(){ clearHints(); tries=0; if(left<=0){ quizHandler=null; target=null; q.textContent='Слух размят!'; fb.className='qfb ok'; fb.textContent='С первой попытки: '+right+' из '+count; if(rep) rep.disabled=true; onDone(right); return; }
+    var pool = right>=3 ? all : easy; target=pool[Math.floor(Math.random()*pool.length)];
+    cnt.textContent='Нота '+(count-left+1)+' из '+count; q.textContent='Послушайте ноту и найдите её на клавиатуре'; fb.textContent=''; fb.className='qfb'; tone(target,0.9); }
+  if(rep) rep.addEventListener('click',function(){ if(target!==null) tone(target,0.9); });
+  quizHandler=function(n){ if(target===null) return;
+    if(n===target){ if(tries===0){ right++; S.xp+=5; paintStats(); save(); } fb.className='qfb ok'; fb.textContent='Да! Это '+chrom[target-BASE]+'.'; left--; target=null; setTimeout(next,1000); }
+    else { tries++; fb.className='qfb no'; fb.textContent = (n-target)%12===0 ? 'Та же нота, другая октава — почти!' : (n<target?'Выше':'Ниже'); if(tries>=4){ var el=document.getElementById('k'+(target-BASE)); if(el) el.classList.add('hint'); } }
+  };
+  box.querySelector('.startg').addEventListener('click',function(e){ e.target.remove(); next(); });
+}
+function runRhythm(box,onDone){
+  var bpm=90, beat=60/bpm, presses=[], t0=0, p0=0, running=false;
+  var q=box.querySelector('.quizq'), fb=box.querySelector('.qfb');
+  box.querySelector('.startr').addEventListener('click',function(e){
+    var c=ensureCtx(); if(!c){ fb.textContent='Звук в браузере недоступен'; return; }
+    presses=[]; running=true; e.target.disabled=true;
+    t0=c.currentTime+0.4; p0=performance.now()+400;
+    for(var i=0;i<12;i++) click(t0+i*beat, i<4);
+    q.textContent='Слушайте 4 щелчка, потом нажимайте любую клавишу ровно на каждый щелчок (8 раз)';
+    fb.textContent=''; fb.className='qfb';
+    quizHandler=function(){ if(running) presses.push(performance.now()); };
+    setTimeout(function(){
+      running=false; quizHandler=null; e.target.disabled=false;
+      var errs=[], hits=0;
+      for(var k=4;k<12;k++){ var bt=p0+k*beat*1000, best=null; presses.forEach(function(p){ var d=p-bt; if(Math.abs(d)<beat*500 && (best===null||Math.abs(d)<Math.abs(best))) best=d; }); if(best!==null){ hits++; errs.push(best); } }
+      if(!hits){ fb.className='qfb no'; fb.textContent='Нажатий не было. Нажмите «Старт» и попробуйте ещё раз.'; return; }
+      var avg=Math.round(errs.reduce(function(a,b){return a+Math.abs(b);},0)/errs.length), bias=Math.round(errs.reduce(function(a,b){return a+b;},0)/errs.length);
+      var grade = (hits>=7 && avg<35) ? 'Отлично!' : (hits>=6 && avg<70 ? 'Хорошо.' : 'Ещё разок.');
+      fb.className = grade==='Ещё разок.' ? 'qfb no' : 'qfb ok';
+      fb.textContent = grade+' Попаданий: '+hits+' из 8, среднее отклонение '+avg+' мс'+(Math.abs(bias)>20?(bias>0?', вы немного опаздываете':', вы немного спешите'):'')+'.';
+      if(grade!=='Ещё разок.'){ S.xp+=10; paintStats(); save(); }
+      onDone();
+    }, 400+12*beat*1000+300);
+  });
+}
+
+/* ---------- home ---------- */
+var sessionLen = 30, mode = 'tr';
+function listFor(md){ return md==='sc' ? SCH : M; }
+function levelsFor(md){ return md==='sc' ? SLEVELS : LEVELS; }
+function carryKey(md){ return md==='sc' ? 'scarry' : 'carry'; }
+function nextIn(md){ var L=listFor(md); for(var i=0;i<L.length;i++){ if(!S.done[L[i].id]) return L[i]; } return null; }
+function lvlOf(m){ var A=m.sc?SLEVELS:LEVELS; for(var i=0;i<A.length;i++){ if(A[i].n===m.lvl) return A[i]; } return A[0]; }
+function planFor(total,md){
+  var warm=3, sand = total>=45 ? 8 : 5, budget = total - warm - sand, list=[], used=0;
+  var ck=carryKey(md), queue = (S[ck]||[]).filter(function(id){ return byId[id] && !S.done[id]; });
+  listFor(md).forEach(function(m){ if(!S.done[m.id] && queue.indexOf(m.id)<0) queue.push(m.id); });
+  for (var i=0;i<queue.length;i++){ var m=byId[queue[i]]; if(used+m.min<=budget || list.length===0){ list.push(m.id); used+=m.min; } if(used>=budget) break; }
+  return {warm:warm, missions:list, sand: sand + Math.max(0,budget-used)};
+}
+function setTabs(){ [['goHome','tr'],['goSchool','sc'],['goGame','gm']].forEach(function(x){ var el=document.getElementById(x[0]); el.classList.toggle('cur',mode===x[1]); if(mode===x[1]) el.setAttribute('aria-current','page'); else el.removeAttribute('aria-current'); }); }
+function renderHome(){
+  if(mode==='gm') return renderGameHome();
+  gameStop(); document.body.classList.remove('gaming');
+  stopTimer(); quizHandler=null; clearHints(); setTabs();
+  document.getElementById('foot').classList.remove('hidden');
+  var L=listFor(mode), doneCount=L.filter(function(m){return S.done[m.id];}).length;
+  var p=planFor(sessionLen,mode), ck=carryKey(mode), h='';
+  if(mode==='tr'){
+    h+='<h1>Короткие сессии вместо залипания</h1>';
+    h+='<p class="muted">Каждая сессия: разминка → 1–3 миссии на таймере → свободная игра в конце. Пройдено миссий: '+doneCount+' из '+L.length+'.</p>';
+    h+='<div class="card"><b>Новое: ритм-игра.</b> Ноты падают на клавиатуру, вы играете их на FM-1 — как в Guitar Hero. Вкладка «Игра» вверху.</div>';
+  } else {
+    var core=M.filter(function(m){return m.lvl<=5;}), coreDone=core.filter(function(m){return S.done[m.id];}).length;
+    h+='<h1>Мастерская: учимся делать музыку</h1>';
+    h+='<p class="muted">Тренажёр учит устройство, Мастерская — музыку: ритм, гармонию, звук, аранжировку и свои треки. Разминка здесь — игры на слух и чувство ритма. Пройдено уроков: '+doneCount+' из '+L.length+'.</p>';
+    if(coreDone<core.length) h+='<div class="card"><b>Совет:</b> лучше начинать после 5-го уровня тренажёра (сейчас пройдено '+coreDone+' из '+core.length+' миссий). Но можно и сейчас — уроки ссылаются только на базовые приёмы.</div>';
+  }
+  h+='<div class="card start"><b>Сколько у вас времени?</b><div class="row" role="group" aria-label="Длина сессии">';
+  [30,45,60].forEach(function(t){ h+='<button type="button" class="chip" data-len="'+t+'" aria-pressed="'+(t===sessionLen)+'">'+t+' мин</button>'; });
+  h+='</div><ul class="plan"><li><span>'+(mode==='tr'?'Разминка: клавиши и вспоминание':'Разминка: слух и ритм')+'</span><span>'+p.warm+' мин</span></li>';
+  p.missions.forEach(function(id){ var m=byId[id]; h+='<li><span>'+esc(m.title)+((S[ck]||[]).indexOf(id)>=0?' (доделать)':'')+'</span><span>'+m.min+' мин</span></li>'; });
+  h+='<li><span>Свободная игра — можно залипать</span><span>'+p.sand+' мин</span></li></ul>';
+  h+='<div class="actions"><button type="button" class="big" id="startBtn">Начать сессию</button></div></div>';
+  h+='<h2>'+(mode==='tr'?'Карта миссий':'Карта уроков')+'</h2>';
+  var nx=nextIn(mode);
+  levelsFor(mode).forEach(function(Lv){
+    h+='<div class="lvl" style="--c:'+Lv.c+'"><h3>'+Lv.title+'</h3><div class="mlist">';
+    L.filter(function(m){return m.lvl===Lv.n;}).forEach(function(m){
+      var d=!!S.done[m.id], isNext = nx && nx.id===m.id;
+      h+='<button type="button" class="mpill'+(d?' done':'')+(isNext?' next':'')+'" data-m="'+m.id+'"><span class="s">'+(d?'✓':(isNext?'●':'○'))+'</span><span class="t">'+esc(m.title)+'</span><span class="m">'+m.min+' мин</span></button>';
+    });
+    h+='</div></div>';
+  });
+  if(mode==='sc'){
+    h+='<h2>Что смотреть на YouTube</h2><div class="card"><p class="muted">Ссылки ведут на поиск, так вы всегда увидите свежие видео.</p><ul class="more">';
+    [['Skiff на FM-1: обзоры и уроки','Skiff FM-1 firmware'],['M-VAVE FM-1: приёмы и джемы','M-VAVE FM-1 jam'],['substatica drones','substatica drones FM-1'],['DECIMA1','DECIMA1 FM-1'],['NatLife Sounds','NatLife Sounds FM-1'],['Теория музыки для битмейкеров','music theory for producers beginner'],['Программирование барабанов','drum programming tutorial'],['Джангл: нарезка брейков','jungle production tutorial'],['Даунтемпо и атмосфера','downtempo production tutorial']].forEach(function(x){ h+='<li><a href="'+YT+encodeURIComponent(x[1])+'" target="_blank" rel="noopener">'+esc(x[0])+'</a></li>'; });
+    h+='</ul></div>';
+  }
+  app.innerHTML=h;
+  app.querySelectorAll('.chip').forEach(function(b){ b.addEventListener('click',function(){ sessionLen=+b.dataset.len; renderHome(); }); });
+  document.getElementById('startBtn').addEventListener('click',function(){ var pl=planFor(sessionLen,mode); startSession([{type:'warm',min:pl.warm,md:mode}].concat(pl.missions.map(function(id){return {type:'mission',id:id,min:byId[id].min};})).concat([{type:'sand',min:pl.sand}])); });
+  app.querySelectorAll('.mpill').forEach(function(b){ b.addEventListener('click',function(){ var m=byId[b.dataset.m]; startSession([{type:'mission',id:m.id,min:m.min}]); }); });
+  window.scrollTo(0,0);
+}
+
+/* ---------- session ---------- */
+var blocks=[], bi=0, timer=null, endAt=0, total=0, paused=false, remain=0, extended=false, sess={done:[],carried:[],xp0:0};
+function startSession(list){ blocks=list; bi=0; sess={done:[],carried:[],xp0:S.xp}; document.getElementById('foot').classList.add('hidden'); renderBlock(); }
+function stopTimer(){ if(timer){ clearInterval(timer); timer=null; } }
+function fmt(ms){ var s=Math.max(0,Math.ceil(ms/1000)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
+function startTimer(min){
+  stopTimer(); total=min*60000; endAt=Date.now()+total; paused=false; extended=false; var fired=false;
+  timer=setInterval(function(){
+    var left = paused ? remain : endAt-Date.now();
+    var c=document.getElementById('clock'), b=document.getElementById('tbarb'); if(!c) return;
+    c.textContent=fmt(left); b.style.width=Math.min(100,100*(1-left/total))+'%';
+    if(left<=0 && !fired){ fired=true; var tu=document.getElementById('timeup'); if(tu) tu.classList.add('show'); beep(); }
+  },250);
+}
+function blockColor(b){ return b.type==='mission' ? lvlOf(byId[b.id]).c : (b.type==='warm' ? 'var(--p1)' : 'var(--p2)'); }
+function renderBlock(){
+  quizHandler=null; clearHints();
+  if(bi>=blocks.length){ return renderSummary(); }
+  var b=blocks[bi], c=blockColor(b), h='', bm=b.type==='mission'?byId[b.id]:null;
+  h+='<div style="--c:'+c+'"><div class="dots">'+blocks.map(function(x,i){return '<i class="'+(i<bi?'done':(i===bi?'now':''))+'"></i>';}).join('')+'</div>';
+  var kind = b.type==='warm' ? 'Разминка' : (b.type==='sand' ? 'Свободная игра' : (bm.sc ? ('Урок · '+lvlOf(bm).title.replace(/^Ступень \d · /,'')) : ((bm.boss?'Босс':'Миссия')+' · уровень '+bm.lvl)));
+  var title = b.type==='warm' ? (b.md==='sc'?'Слух и ритм':'Разогрев пальцев и памяти') : (b.type==='sand' ? 'Играйте что хотите' : bm.title);
+  h+='<p class="kind">'+esc(kind)+'</p><h1 class="stitle">'+esc(title)+'</h1>';
+  h+='<div class="timer"><span class="clock" id="clock">'+fmt(b.min*60000)+'</span><span class="tbar"><b id="tbarb"></b></span></div>';
+  h+='<div class="timeup" id="timeup" role="alert">'+(b.type==='sand'?'Время вышло. Отличная сессия — сохраните проект, если получилось что-то классное.':'Время вышло. Отметьте, что успели, и идите дальше — недоделанное вернётся в следующий раз.')+'</div>';
+  if(b.type==='warm' && b.md==='sc'){
+    h+='<p class="goal">Сделайте звук компьютера погромче. Отвечайте на FM-1 (октава 0) или мышкой по схеме.</p>';
+    h+='<div class="card quiz" id="ear"><span class="qcnt muted">Игра 1 · слух</span><p class="quizq">Компьютер сыграет ноту — найдите её на клавиатуре. Подсказки «выше» и «ниже» помогут.</p><p class="qfb"></p><div class="actions"><button type="button" class="big startg">Начать</button><button type="button" class="ghost again">Повторить ноту</button></div></div>';
+    h+='<div class="card quiz" id="rhy"><span class="qcnt muted">Игра 2 · ритм, 90 BPM</span><p class="quizq">Нажимайте любую клавишу ровно на щелчки метронома.</p><p class="qfb"></p><div class="actions"><button type="button" class="big startr">Старт</button></div></div>';
+    h+='<div class="actions"><button type="button" class="big" id="nextB">Дальше</button></div>';
+  } else if(b.type==='warm'){
+    h+='<p class="goal">Поставьте октаву в 0 (<kbd>OCT−</kbd> и <kbd>OCT+</kbd> вместе), откройте <kbd>HOME</kbd> и отвечайте нажатием клавиши.</p>';
+    h+='<div class="card quiz"><span class="qcnt muted"></span><p class="quizq"></p><p class="qfb"></p></div>';
+    var rec=M.filter(function(m){return S.done[m.id];});
+    if(rec.length){ var r=rec[Math.floor(Math.random()*rec.length)]; h+='<div class="recall" id="recall"><b>Вспомните:</b> '+esc(r.recall[0])+'<div class="a">'+esc(r.recall[1])+'</div><div class="actions"><button type="button" class="ghost" id="reveal">Показать ответ</button></div></div>'; }
+    h+='<div class="actions"><button type="button" class="big" id="nextB">Дальше</button></div>';
+  } else if(b.type==='sand'){
+    h+='<p class="goal">Это законное время, чтобы залипать: крутите звуки, наигрывайте мелодии. Когда таймер закончится — заканчиваем сессию.</p>';
+    h+='<div class="card"><b>Идеи, если не знаете, с чего начать</b><ul class="more"><li>Смените звук баса на тот, что ни разу не пробовали.</li><li>Поставьте шанс 50 % на три случайных шага.</li><li>Сыграйте мелодию поверх бита и сохраните её через TAKE.</li></ul></div>';
+    h+='<div class="actions"><button type="button" class="big" id="nextB">Завершить сессию</button><button type="button" class="ghost" id="pauseB">Пауза</button></div>';
+  } else {
+    var m=bm;
+    h+='<p class="goal">'+esc(m.goal)+'</p>';
+    if(m.listen){ h+='<div class="recall"><b>Что послушать:</b> '+esc(m.listen)+(m.yt?' <a href="'+YT+encodeURIComponent(m.yt)+'" target="_blank" rel="noopener">Видео на YouTube</a>':'')+'</div>'; }
+    h+='<ol class="steps">';
+    m.steps.forEach(function(st){ h+='<li><button type="button" class="step" aria-pressed="false"><span>'+chips(st)+'</span></button></li>'; });
+    h+='</ol>';
+    if(m.quiz){ h+='<div class="card quiz"><span class="qcnt muted"></span><p class="quizq"></p><p class="qfb"></p></div>'; }
+    if(m.ch){ h+='<p class="more"><a href="'+BOOK+'#ch'+m.ch+'" target="_blank" rel="noopener">Подробнее в справочнике, глава '+m.ch+'</a></p>'; }
+    h+='<div class="actions"><button type="button" class="big" id="doneB">Готово ✓</button><button type="button" class="ghost" id="carryB">Не успел — в следующий раз</button><button type="button" class="ghost" id="moreB">+2 мин</button><button type="button" class="ghost" id="pauseB">Пауза</button></div>';
+  }
+  h+='</div>';
+  app.innerHTML=h; window.scrollTo(0,0);
+  startTimer(b.min);
+  app.querySelectorAll('.step').forEach(function(s){ s.addEventListener('click',function(){ s.setAttribute('aria-pressed', s.getAttribute('aria-pressed')==='true'?'false':'true'); }); });
+  var pb=document.getElementById('pauseB'); if(pb) pb.addEventListener('click',function(){ if(!paused){ remain=endAt-Date.now(); paused=true; pb.textContent='Продолжить'; } else { endAt=Date.now()+remain; paused=false; pb.textContent='Пауза'; } });
+  var mb=document.getElementById('moreB'); if(mb) mb.addEventListener('click',function(){ if(extended) return; extended=true; endAt+=120000; total+=120000; if(paused) remain+=120000; var tu=document.getElementById('timeup'); if(tu) tu.classList.remove('show'); mb.disabled=true; mb.textContent='+2 мин добавлено'; });
+  var rv=document.getElementById('reveal'); if(rv) rv.addEventListener('click',function(){ document.getElementById('recall').classList.add('open'); rv.remove(); });
+  if(b.type==='warm' && b.md==='sc'){ runEar(document.getElementById('ear'),5,function(){}); runRhythm(document.getElementById('rhy'),function(){}); document.getElementById('nextB').addEventListener('click',function(){ bi++; renderBlock(); }); }
+  else if(b.type==='warm'){ runQuiz(app.querySelector('.quiz'),4,function(){}); document.getElementById('nextB').addEventListener('click',function(){ bi++; renderBlock(); }); }
+  if(b.type==='sand'){ document.getElementById('nextB').addEventListener('click',function(){ bi++; renderBlock(); }); }
+  if(b.type==='mission'){
+    var mm=bm, ck=carryKey(mm.sc?'sc':'tr');
+    if(mm.quiz) runQuiz(app.querySelector('.quiz'),mm.quiz,function(){});
+    document.getElementById('doneB').addEventListener('click',function(){ if(!S.done[mm.id]){ S.done[mm.id]=1; S.xp += mm.boss?200:mm.min*10; } S[ck]=(S[ck]||[]).filter(function(x){return x!==mm.id;}); sess.done.push(mm.id); save(); paintStats(); bi++; renderBlock(); });
+    document.getElementById('carryB').addEventListener('click',function(){ S[ck]=(S[ck]||[]).filter(function(x){return x!==mm.id;}); S[ck].unshift(mm.id); sess.carried.push(mm.id); save(); bi++; renderBlock(); });
+  }
+}
+function renderSummary(){
+  stopTimer(); quizHandler=null; clearHints();
+  bumpStreak(); save(); paintStats();
+  var nx=nextIn(mode), word = mode==='sc'?'урок':'миссия';
+  var h='<div class="summary"><h1>Сессия закончена</h1><div class="sgrid"><div><span class="num">'+sess.done.length+'</span><small>'+(mode==='sc'?'уроков':'миссий')+' пройдено</small></div><div><span class="num">+'+(S.xp-sess.xp0)+'</span><small>XP</small></div><div><span class="num">'+S.streak+'</span><small>дней подряд</small></div></div>';
+  if(sess.carried.length) h+='<p>В следующий раз начнём с: '+sess.carried.map(function(id){return esc(byId[id].title);}).join(', ')+'.</p>';
+  else if(nx) h+='<p>Следующий '+(mode==='sc'?'урок':'шаг')+': <b>'+esc(nx.title)+'</b>.</p>';
+  else if(mode==='tr') h+='<p><b>Все миссии пройдены!</b> Переходите во вкладку «Мастерская» — там учимся делать музыку.</p>';
+  else h+='<p><b>Мастерская пройдена!</b> Дальше — свои треки. Свободная игра теперь ваша основная практика.</p>';
+  h+='<div class="actions"><button type="button" class="big" id="homeB">На главную</button></div></div>';
+  app.innerHTML=h; document.getElementById('foot').classList.remove('hidden');
+  document.getElementById('homeB').addEventListener('click',renderHome);
+}
+/* ---------- rhythm game ---------- */
+var GLEVELS=[{n:1,title:'Уровень 1 · Знакомство с клавишами',c:'var(--p1)'},{n:2,title:'Уровень 2 · Бас и лады',c:'var(--p2)'},{n:3,title:'Уровень 3 · Аккорды и мелодии',c:'var(--p3)'},{n:4,title:'Уровень 4 · Ритм и скорость',c:'var(--p4)'}];
+var NM={C:0,D:2,E:4,F:5,G:7,A:9,B:11};
+function nmidi(t){ var m=/^([A-G])(#|♯)?(\d)$/.exec(t); if(!m) return null; return 12*(+m[3]+1)+NM[m[1]]+(m[2]?1:0); }
+function chart(str,def){ var b=0, ev=[]; str.split(/\s+/).forEach(function(tok){ if(!tok||tok==='|') return; var p=tok.split(':'), d=p[1]?parseFloat(p[1]):def; if(p[0]!=='-'){ var ns=p[0].split('+').map(nmidi).filter(function(x){return x!==null;}); if(ns.length) ev.push({b:b,n:ns,d:d}); } b+=d; }); return {ev:ev,len:b}; }
+function swingIt(c){ c.ev.forEach(function(e){ var f=e.b%1; if(Math.abs(f-0.5)<1e-6) e.b=e.b-0.5+0.62; }); return c; }
+var SONGS=[
+ {id:'g1',lvl:1,title:'Пять пальцев',bpm:72,style:'click',tip:'Пять соседних клавиш нижнего ряда с C4. Просто попадайте вовремя.',ch:chart('C4 D4 E4 F4 G4:2 - - G4 F4 E4 D4 C4:2 - - | C4 E4 G4 E4 C4:2 - - D4 F4 E4 D4 C4:4',1)},
+ {id:'g2',lvl:1,title:'Все 16 шагов',bpm:76,style:'click',tip:'Нижний ряд слева направо — это шаги 1–16. Пройдите их туда и обратно.',ch:chart('F3 G3 A3 B3 C4 D4 E4 F4 G4 A4 B4 C5 D5 E5 F5 G5:2 - G5 F5 E5 D5 C5 B4 A4 G4 F4 E4 D4 C4 B3 A3 G3 F3:2',0.5)},
+ {id:'g3',lvl:1,title:'Шаги 1 · 5 · 9 · 13',bpm:90,style:'four',tip:'Клавиши долей: шаги 1, 5, 9, 13. Потом снейр — шаги 5 и 13. Запомните их руками.',ch:chart('F3 C4 G4 D5 F3 C4 G4 D5 | C4:2 D5:2 C4:2 D5:2 | F3 C4 G4 D5 C4:2 D5:2',1)},
+ {id:'g4',lvl:2,title:'Басовая линия (глава 3)',bpm:100,style:'four',tip:'Та самая линия из «Первого бита». На FM-1 можно нажать OCT− — игра засчитает любую октаву.',ch:chart('A3 - A3 - A4 - A3 - G3 - A3 - C4 - E4 - | A3 - A3 - A4 - A3 - G3 - A3 - C4 - E4 - | A3 - A3 - A4 - A3 - G3 - G3 - A3:2',0.5)},
+ {id:'g5',lvl:2,title:'Ля-минорный рифф',bpm:96,style:'four',tip:'Пентатоника ля минор: A, C, D, E, G. Почти невозможно сфальшивить.',ch:chart('A3:0.5 C4:0.5 D4:0.5 E4:0.5 G4 E4 D4:0.5 C4:0.5 A3:2 - | A3:0.5 C4:0.5 D4:0.5 E4:0.5 G4 A4 G4:0.5 E4:0.5 D4:2 - | E4:0.5 D4:0.5 C4:0.5 A3:0.5 C4 D4 A3:3',1)},
+ {id:'g6',lvl:2,title:'Чёрные клавиши',bpm:88,style:'soft',tip:'Только верхний ряд: это готовая пентатоника. Привыкаем к чёрным клавишам.',ch:chart('F#3 G#3 A#3 C#4 D#4:2 - - D#4 C#4 A#3 G#3 F#3:2 - - | C#4 D#4 F#4 D#4 C#4:2 A#3:2 G#3 A#3 C#4:4',1)},
+ {id:'g7',lvl:3,title:'Четыре аккорда',bpm:80,style:'soft',tip:'Ля минор → фа → до → соль. Берите три клавиши разом. Засчитывается каждая нота.',ch:chart('A3+C4+E4:4 F3+A3+C4:4 C4+E4+G4:4 G3+B3+D4:4 | A3+C4+E4:4 F3+A3+C4:4 C4+E4+G4:4 G3+B3+D4:4',4)},
+ {id:'g8',lvl:3,title:'Вопрос и ответ',bpm:90,style:'soft',swing:true,tip:'Фраза-вопрос и похожая фраза-ответ, которая приходит домой на A.',ch:swingIt(chart('E4:0.5 G4:0.5 A4:1.5 G4:0.5 E4:2 - - | E4:0.5 G4:0.5 A4:1.5 C5:0.5 A4:4 | D5:0.5 C5:0.5 A4 G4 E4 G4:0.5 E4:0.5 D4 E4:2 A3:2',1))},
+ {id:'g9',lvl:3,title:'Даунтемпо-клавиши',bpm:86,style:'soft',swing:true,tip:'Расслабленный свинг: каждая вторая восьмая чуть позже. Слушайте подсказку.',ch:swingIt(chart('A3 C4 E4 G4 E4 C4 A3:1 - | F3 A3 C4 E4 C4 A3 F3:1 - | C4 E4 G4 B4 G4 E4 C4:1 - | G3 B3 D4 F4 E4 D4 B3:1 -',0.5))},
+ {id:'g10',lvl:4,title:'Дробь',bpm:96,style:'four',tip:'Одна клавиша, но всё быстрее: четверти, восьмые, шестнадцатые. Как рэтчет.',ch:chart('C4 C4 C4 C4 | C4:0.5 C4:0.5 C4:0.5 C4:0.5 C4:0.5 C4:0.5 C4 | C4:0.25 C4:0.25 C4:0.25 C4:0.25 C4:0.5 C4:0.5 C4:0.25 C4:0.25 C4:0.25 C4:0.25 C4 | D5:0.25 D5:0.25 D5:0.25 D5:0.25 D5:0.25 D5:0.25 D5:0.25 D5:0.25 D5:2',1)},
+ {id:'g11',lvl:4,title:'Джангл-нарезка',bpm:170,style:'break',tip:'Куски брейка в SLICE идут по клавишам подряд: низ 1, верх 1, низ 2… Здесь — классическая перестановка. Начните на скорости 60 %.',ch:chart('F3 F#3 G3 G#3 F3 F#3 F3 F#3 | A3 A#3 B3 C4 F3 F3 G3 G#3 | F3 F#3 G3 G#3 A3 A#3 F3 F#3 | B3 B3 C4 C4 B3:0.25 B3:0.25 B3:0.25 B3:0.25 C4:1',0.5)},
+ {id:'g12',lvl:4,title:'Финал: мини-сет',bpm:118,style:'four',tip:'Всё вместе: бас, аккорды, мелодия и дробь в конце.',ch:chart('A3:0.5 - A3:0.5 - A4:0.5 - A3:0.5 G3:0.5 | A3+C4+E4:2 F3+A3+C4:2 | E4:0.5 G4:0.5 A4 C5:0.5 A4:0.5 G4 | C4+E4+G4:2 G3+B3+D4:2 | E4:0.5 D4:0.5 C4:0.5 A3:0.5 C4 D4 | D5:0.25 D5:0.25 D5:0.25 D5:0.25 D5:0.25 D5:0.25 D5:0.25 D5:0.25 A3+C4+E4:2',1)}
+];
+var songById={}; SONGS.forEach(function(s){songById[s.id]=s;});
+if(!S.best) S.best={}; if(!S.gset) S.gset={speed:1,guide:true,beat:true,lat:0,all:false};
+function stars(acc){ return acc>=0.95?3:(acc>=0.8?2:(acc>=0.6?1:0)); }
+function unlocked(i){ if(S.gset.all||i===0) return true; var p=SONGS[i-1]; return S.best[p.id] && S.best[p.id].stars>=1; }
+var held={}, G=null;
+
+function renderGameHome(){
+  stopTimer(); quizHandler=null; clearHints(); setTabs(); gameStop();
+  document.body.classList.remove('gaming'); document.getElementById('foot').classList.remove('hidden');
+  var gs=S.gset, h='<h1>Ритм-игра: играй по нотам</h1>';
+  h+='<p class="muted">Как в Guitar Hero: ноты падают на клавиатуру, вы играете их на FM-1 точно в момент удара. Игра слушает FM-1 по USB и считает каждое попадание.</p>';
+  h+='<div class="card"><b>Перед игрой</b><ol class="more"><li>Откройте тренажёр <b>файлом</b> в Chrome или Edge и подключите FM-1 кнопкой внизу.</li><li>На FM-1: меню → MIDI → <b>NOTES OUT → KEYS</b>. Иначе секвенсор FM-1 будет «играть за вас».</li><li>Остановите музыку на FM-1, октава любая — засчитывается нота в любой октаве.</li><li>Наушники — в FM-1, звук бита идёт из компьютера. Без FM-1 можно тапать по клавиатуре на экране.</li></ol></div>';
+  h+='<div class="card start"><b>Настройки</b><div class="row" role="group" aria-label="Скорость">';
+  [[0.6,'60 %'],[0.8,'80 %'],[1,'100 %']].forEach(function(o){ h+='<button type="button" class="chip gsp" data-v="'+o[0]+'" aria-pressed="'+(gs.speed===o[0])+'">Скорость '+o[1]+'</button>'; });
+  h+='</div><div class="row"><button type="button" class="chip gtog" data-k="guide" aria-pressed="'+gs.guide+'">Подсказка звуком</button><button type="button" class="chip gtog" data-k="beat" aria-pressed="'+gs.beat+'">Бит</button><button type="button" class="chip gtog" data-k="all" aria-pressed="'+gs.all+'">Открыть все песни</button></div>';
+  h+='<div class="row"><button type="button" class="ghost" id="calB">Калибровка задержки</button><span class="muted" style="align-self:center">Сейчас: '+Math.round(gs.lat*1000)+' мс</span></div></div>';
+  GLEVELS.forEach(function(L){
+    h+='<div class="lvl" style="--c:'+L.c+'"><h3>'+L.title+'</h3><div class="mlist">';
+    SONGS.forEach(function(s,i){ if(s.lvl!==L.n) return; var b=S.best[s.id], u=unlocked(i), st=b?b.stars:0;
+      h+='<button type="button" class="mpill'+(b&&st?' done':'')+'" data-g="'+s.id+'"'+(u?'':' disabled aria-disabled="true"')+'><span class="s">'+(u?'':'🔒')+'</span><span class="t">'+esc(s.title)+'</span><span class="m">'+(u?('★'.repeat(st)+'☆'.repeat(3-st)+(b?' · '+Math.round(b.acc*100)+'%':'')):'пройдите прошлую')+'</span></button>'; });
+    h+='</div></div>';
+  });
+  app.innerHTML=h; window.scrollTo(0,0);
+  app.querySelectorAll('.gsp').forEach(function(b){ b.addEventListener('click',function(){ S.gset.speed=+b.dataset.v; save(); renderGameHome(); }); });
+  app.querySelectorAll('.gtog').forEach(function(b){ b.addEventListener('click',function(){ S.gset[b.dataset.k]=!S.gset[b.dataset.k]; save(); renderGameHome(); }); });
+  document.getElementById('calB').addEventListener('click',renderCalib);
+  app.querySelectorAll('[data-g]').forEach(function(b){ b.addEventListener('click',function(){ if(b.disabled) return; renderSong(songById[b.dataset.g]); }); });
+}
+
+function renderCalib(){
+  gameStop();
+  app.innerHTML='<h1 class="stitle" style="margin-top:1.6rem">Калибровка задержки</h1><p class="goal">Наушники и бит должны совпадать с вашими нажатиями. Прозвучат 4 щелчка, потом нажимайте любую клавишу на FM-1 точно в щелчок 12 раз.</p><div class="card quiz"><p class="quizq" id="calq">Готовы?</p><p class="qfb" id="calf"></p><div class="actions"><button type="button" class="big" id="calGo">Старт</button><button type="button" class="ghost" id="calBack">Назад</button></div></div>';
+  document.getElementById('calBack').addEventListener('click',renderGameHome);
+  document.getElementById('calGo').addEventListener('click',function(e){
+    var c=ensureCtx(); if(!c) return; e.target.disabled=true; var beat=60/90, t0=c.currentTime+0.4, hits=[];
+    for(var i=0;i<16;i++) click(t0+i*beat,i%4===0);
+    document.getElementById('calq').textContent='Слушайте 4 щелчка и нажимайте в такт…';
+    quizHandler=function(n,ts){ hits.push(inAudio(ts)); };
+    setTimeout(function(){ quizHandler=null; e.target.disabled=false; var d=[];
+      hits.forEach(function(h){ var k=Math.round((h-t0)/beat); if(k>=4&&k<16){ var x=h-(t0+k*beat); if(Math.abs(x)<beat*0.4) d.push(x); } });
+      var f=document.getElementById('calf');
+      if(d.length<6){ f.className='qfb no'; f.textContent='Мало попаданий ('+d.length+'). Попробуйте ещё раз.'; return; }
+      d.sort(function(a,b){return a-b;}); var med=d[Math.floor(d.length/2)];
+      S.gset.lat=Math.max(-0.1,Math.min(0.3,med)); save();
+      f.className='qfb ok'; f.textContent='Готово: задержка '+Math.round(S.gset.lat*1000)+' мс. Игра будет её учитывать.';
+    }, 400+16*beat*1000+300);
+  });
+}
+function inAudio(ts){ var c=ensureCtx(); var now=performance.now(); var dt=(typeof ts==='number' && ts>0 && ts<=now+5)?(now-ts)/1000:0; return c.currentTime-dt; }
+
+function renderSong(s){
+  gameStop(); quizHandler=null; clearHints(); document.getElementById('foot').classList.add('hidden');
+  var b=S.best[s.id];
+  var h='<div class="gtop"><button type="button" class="ghost" id="gBack">← Песни</button><span class="muted">'+s.bpm+' BPM · скорость '+Math.round(S.gset.speed*100)+' %</span></div>';
+  h+='<h1 class="stitle">'+esc(s.title)+'</h1><p class="goal">'+esc(s.tip)+'</p>';
+  h+='<div class="hud" aria-live="off"><span>Очки <b id="gScore">0</b></span><span>Серия <b id="gCombo">0</b></span><span>Точность <b id="gAcc">—</b></span>'+(b?'<span>Рекорд <b>'+'★'.repeat(b.stars)+' '+Math.round(b.acc*100)+'%</b></span>':'')+'</div>';
+  h+='<div class="gwrap"><canvas id="gc" aria-label="Падающие ноты над клавиатурой FM-1"></canvas></div>';
+  h+='<div class="actions"><button type="button" class="big" id="gPlay">Играть</button><button type="button" class="ghost" id="gDemo">Прослушать</button><button type="button" class="ghost" id="gStop" disabled>Стоп</button></div>';
+  app.innerHTML=h; window.scrollTo(0,0); document.body.classList.add('gaming');
+  document.getElementById('gBack').addEventListener('click',renderGameHome);
+  document.getElementById('gPlay').addEventListener('click',function(){ startRun(s,false); });
+  document.getElementById('gDemo').addEventListener('click',function(){ startRun(s,true); });
+  document.getElementById('gStop').addEventListener('click',function(){ gameStop(); drawIdle(s); });
+  setupCanvas(); drawIdle(s);
+  var cv=document.getElementById('gc');
+  cv.addEventListener('pointerdown',function(e){ var r=cv.getBoundingClientRect(), x=e.clientX-r.left, y=e.clientY-r.top; var n=keyAt(x,y,r.width,r.height); if(n===null) return; e.preventDefault(); noteOn(n,performance.now()); setTimeout(function(){ noteOff(n); },150); });
+}
+
+var CV=null;
+function setupCanvas(){ var cv=document.getElementById('gc'); if(!cv) return; var w=cv.parentNode.clientWidth, h=Math.max(280,Math.min(window.innerHeight*0.58,560)); var dpr=window.devicePixelRatio||1; cv.width=Math.round(w*dpr); cv.height=Math.round(h*dpr); cv.style.width=w+'px'; cv.style.height=h+'px'; var cx=cv.getContext('2d'); cx.setTransform(dpr,0,0,dpr,0,0); var cs=getComputedStyle(document.documentElement); CV={cv:cv,cx:cx,w:w,h:h,kh:Math.min(110,h*0.24),col:{bg:cs.getPropertyValue('--surface').trim(),rule:cs.getPropertyValue('--rule').trim(),ink:cs.getPropertyValue('--ink').trim(),muted:cs.getPropertyValue('--muted').trim(),p1:cs.getPropertyValue('--p1').trim(),p4:cs.getPropertyValue('--p4').trim(),good:cs.getPropertyValue('--good').trim(),warn:cs.getPropertyValue('--warn').trim()}}; }
+window.addEventListener('resize',function(){ if(document.getElementById('gc')){ setupCanvas(); if(!G&&CV) drawIdle(null); } });
+function laneOf(n){ var i=((n-BASE)%12+12)%12, idx=n-BASE; while(idx<0) idx+=12; while(idx>26) idx-=12; var w=whiteIdx.indexOf(idx); if(w>=0) return {black:false,x:w}; for(var k in blackAfter){ if(blackAfter[k]===idx) return {black:true,x:+k+1}; } return {black:false,x:0}; }
+function keyAt(x,y,w,h){ var kh=CV.kh, top=h-kh; if(y<top) return null; var ww=w/16; if(y<top+kh*0.6){ for(var k in blackAfter){ var cx=(+k+1)*ww; if(Math.abs(x-cx)<ww*0.33) return BASE+blackAfter[k]; } } var wi=Math.max(0,Math.min(15,Math.floor(x/ww))); return BASE+whiteIdx[wi]; }
+function idxIn(n){ var idx=n-BASE; while(idx<0) idx+=12; while(idx>26) idx-=12; return idx; }
+function drawKeys(cx,w,h,kh,flash){
+  var ww=w/16, top=h-kh, C=CV.col;
+  for(var i=0;i<16;i++){ var on=held[whiteIdx[i]]; cx.fillStyle=on?'#FFD84D':'#FFFFFF'; cx.fillRect(i*ww+1,top,ww-2,kh); cx.strokeStyle='#97A3AF'; cx.strokeRect(i*ww+1.5,top+.5,ww-3,kh-1);
+    if(ww>26){ cx.fillStyle='#15202B'; cx.font='600 '+(ww>40?12:10)+'px "Golos Text",system-ui,sans-serif'; cx.textAlign='center'; cx.fillText(chrom[whiteIdx[i]],i*ww+ww/2,h-8); cx.fillStyle='#2459C8'; cx.fillText(String(i+1),i*ww+ww/2,h-24); } }
+  for(var k in blackAfter){ var ci=blackAfter[k], x=(+k+1)*ww; cx.fillStyle=held[ci]?'#E0A100':'#1B2229'; cx.fillRect(x-ww*0.3,top,ww*0.6,kh*0.6); }
+  cx.fillStyle=C.ink; cx.globalAlpha=0.85; cx.fillRect(0,top-2,w,3); cx.globalAlpha=1;
+  if(flash){ flash.forEach(function(f){ var a=Math.max(0,1-f.age/0.35); if(a<=0) return; var l=laneOf(f.n), x=(l.black?l.x*ww:l.x*ww+ww/2); cx.globalAlpha=a; cx.fillStyle=f.c; cx.beginPath(); cx.arc(x,top,ww*0.45,0,Math.PI*2); cx.fill(); cx.globalAlpha=1; }); }
+}
+function drawIdle(s){ if(!CV) return; var cx=CV.cx,w=CV.w,h=CV.h; cx.clearRect(0,0,w,h); cx.fillStyle=CV.col.bg; cx.fillRect(0,0,w,h); var ww=w/16; cx.strokeStyle=CV.col.rule; for(var i=1;i<16;i++){ cx.beginPath(); cx.moveTo(i*ww,0); cx.lineTo(i*ww,h-CV.kh); cx.stroke(); } cx.fillStyle=CV.col.muted; cx.font='600 15px "Golos Text",system-ui,sans-serif'; cx.textAlign='center'; cx.fillText('Нажмите «Играть» или «Прослушать»',w/2,(h-CV.kh)/2); drawKeys(cx,w,h,CV.kh,null); }
+
+var bufNoise=null;
+function noiseBuf(c){ if(bufNoise) return bufNoise; var b=c.createBuffer(1,c.sampleRate*0.3,c.sampleRate), d=b.getChannelData(0); for(var i=0;i<d.length;i++) d[i]=Math.random()*2-1; bufNoise=b; return b; }
+function dKick(c,out,t){ var o=c.createOscillator(), g=c.createGain(); o.frequency.setValueAtTime(140,t); o.frequency.exponentialRampToValueAtTime(42,t+0.18); g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.7,t+0.004); g.gain.exponentialRampToValueAtTime(0.0001,t+0.28); o.connect(g); g.connect(out); o.start(t); o.stop(t+0.3); }
+function dNoise(c,out,t,dur,freq,gain,type){ var s=c.createBufferSource(); s.buffer=noiseBuf(c); var f=c.createBiquadFilter(); f.type=type; f.frequency.value=freq; var g=c.createGain(); g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(gain,t+0.003); g.gain.exponentialRampToValueAtTime(0.0001,t+dur); s.connect(f); f.connect(g); g.connect(out); s.start(t); s.stop(t+dur+0.02); }
+function dClick(c,out,t,hi){ var o=c.createOscillator(), g=c.createGain(); o.frequency.value=hi?1500:1000; g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(hi?0.28:0.16,t+0.003); g.gain.exponentialRampToValueAtTime(0.0001,t+0.05); o.connect(g); g.connect(out); o.start(t); o.stop(t+0.06); }
+function dTone(c,out,t,n,dur){ var o=c.createOscillator(), g=c.createGain(); o.type='triangle'; o.frequency.value=440*Math.pow(2,(n-69)/12); var d=Math.max(0.12,Math.min(dur,1.5)); g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.13,t+0.01); g.gain.exponentialRampToValueAtTime(0.0001,t+d); o.connect(g); g.connect(out); o.start(t); o.stop(t+d+0.02); }
+function scheduleBeat(c,out,style,t0,spb,beats){
+  var B=Math.ceil(beats/4)*4;
+  for(var b=0;b<B;b++){ var t=t0+b*spb;
+    if(style==='click'){ dClick(c,out,t,b%4===0); }
+    else if(style==='four'){ dKick(c,out,t); dNoise(c,out,t+spb/2,0.05,7000,0.12,'highpass'); if(b%2===1) dNoise(c,out,t,0.14,1800,0.25,'bandpass'); }
+    else if(style==='soft'){ if(b%4===0) dKick(c,out,t); if(b%4===2) dKick(c,out,t+spb*0.62); if(b%2===1) dNoise(c,out,t,0.08,3000,0.12,'bandpass'); dNoise(c,out,t,0.04,8000,0.06,'highpass'); dNoise(c,out,t+spb*0.62,0.04,8000,0.05,'highpass'); }
+    else if(style==='break'){ var q=b%4; if(q===0) dKick(c,out,t); if(q===1||q===3) dNoise(c,out,t,0.14,1800,0.3,'bandpass'); if(q===2) { dKick(c,out,t+spb*0.5); } if(q===3) dNoise(c,out,t+spb*0.75,0.08,1800,0.12,'bandpass'); dNoise(c,out,t,0.04,7500,0.08,'highpass'); dNoise(c,out,t+spb*0.5,0.04,7500,0.06,'highpass'); }
+  }
+}
+
+function startRun(s,demo){
+  gameStop(); var c=ensureCtx(); if(!c||!CV) return; setupCanvas();
+  var bpm=s.bpm*S.gset.speed, spb=60/bpm, lead=1.8, t0=c.currentTime+0.25+4*spb;
+  var out=c.createGain(); out.gain.value=1; out.connect(c.destination);
+  for(var i=0;i<4;i++) dClick(c,out,t0-(4-i)*spb,i===0);
+  if(S.gset.beat) scheduleBeat(c,out,s.style,t0,spb,s.ch.len);
+  var notes=[]; s.ch.ev.forEach(function(e){ e.n.forEach(function(n){ notes.push({t:t0+e.b*spb,n:n,d:e.d*spb,j:null}); }); if(S.gset.guide||demo) e.n.forEach(function(n){ dTone(c,out,t0+e.b*spb,n,e.d*spb*0.9); }); });
+  var end=t0+s.ch.len*spb+1.0;
+  G={s:s,demo:demo,out:out,notes:notes,t0:t0,end:end,spb:spb,pps:(CV.h-CV.kh)/lead*1,score:0,combo:0,maxc:0,per:0,good:0,miss:0,wrong:0,flash:[],msg:null,lat:S.gset.lat,raf:0};
+  document.getElementById('gStop').disabled=false; document.getElementById('gPlay').disabled=true; document.getElementById('gDemo').disabled=true;
+  quizHandler=demo?null:function(n,ts){ judge(n,inAudio(ts)); };
+  G.raf=requestAnimationFrame(frame);
+}
+function judge(n,ta){ if(!G) return; var c=ensureCtx(), t=ta-G.lat, best=null, bd=1; G.notes.forEach(function(x){ if(x.j) return; if(((n-x.n)%12+12)%12!==0) return; var d=t-x.t; if(Math.abs(d)<0.16 && Math.abs(d)<Math.abs(bd)){ best=x; bd=d; } });
+  if(!best){ G.wrong++; G.combo=0; G.flash.push({n:n,c:CV.col.warn,born:c.currentTime}); G.msg={txt:'Мимо',c:CV.col.warn,born:c.currentTime}; return; }
+  var ad=Math.abs(bd), ms=Math.round(bd*1000);
+  if(ad<=0.055){ best.j='p'; G.per++; G.combo++; G.score+=100*mult(); G.msg={txt:'Идеально',c:CV.col.good,born:c.currentTime}; }
+  else { best.j='g'; G.good++; G.combo++; G.score+=50*mult(); G.msg={txt:'Хорошо · '+(ms<0?'рано ':'поздно ')+Math.abs(ms)+' мс',c:CV.col.p1,born:c.currentTime}; }
+  G.maxc=Math.max(G.maxc,G.combo); G.flash.push({n:best.n,c:best.j==='p'?CV.col.good:CV.col.p1,born:c.currentTime});
+}
+function mult(){ return 1+Math.min(3,Math.floor(G.combo/10)); }
+function frame(){
+  if(!G) return; var c=ensureCtx(), now=c.currentTime, cx=CV.cx, w=CV.w, h=CV.h, kh=CV.kh, top=h-kh, ww=w/16, C=CV.col, pps=G.pps;
+  if(G.demo){ G.notes.forEach(function(x){ if(!x.j && now>=x.t){ x.j='p'; held[idxIn(x.n)]=true; x.off=x.t+Math.min(x.d,0.25); G.flash.push({n:x.n,c:C.good,born:now}); } if(x.off && now>=x.off){ delete held[idxIn(x.n)]; x.off=0; } }); }
+  else G.notes.forEach(function(x){ if(!x.j && now-G.lat>x.t+0.16){ x.j='m'; G.miss++; G.combo=0; G.msg={txt:'Пропуск',c:C.warn,born:now}; } });
+  cx.clearRect(0,0,w,h); cx.fillStyle=C.bg; cx.fillRect(0,0,w,h);
+  cx.strokeStyle=C.rule; cx.lineWidth=1; for(var i=1;i<16;i++){ cx.beginPath(); cx.moveTo(i*ww,0); cx.lineTo(i*ww,top); cx.stroke(); }
+  for(var bt=Math.floor((now-G.t0)/G.spb);bt<(now-G.t0)/G.spb+12;bt++){ if(bt<0) continue; var by=top-(G.t0+bt*G.spb-now)*pps; if(by<0) break; cx.globalAlpha=bt%4===0?0.35:0.12; cx.fillStyle=C.ink; cx.fillRect(0,by,w,1); cx.globalAlpha=1; }
+  G.notes.forEach(function(x){ var y=top-(x.t-now)*pps; var tail=x.d>G.spb*1.4?x.d*pps*0.9:0, len=18; if(y<-tail-20||y-len>top+5) return; if(x.j==='p'||x.j==='g') return; var l=laneOf(x.n), bw=l.black?ww*0.56:ww*0.82, bx=l.black?l.x*ww-bw/2:l.x*ww+(ww-bw)/2; cx.globalAlpha=x.j==='m'?0.3:1; cx.fillStyle=l.black?C.p4:C.p1; var yy=Math.min(y,top); if(tail){ cx.globalAlpha*=0.35; cx.fillRect(bx+bw*0.38,yy-tail,bw*0.24,tail); cx.globalAlpha=x.j==='m'?0.3:1; } var hh=len; cx.beginPath(); if(cx.roundRect) cx.roundRect(bx,yy-hh,bw,hh,5); else cx.rect(bx,yy-hh,bw,hh); cx.fill(); if(ww>28){ cx.fillStyle='#fff'; cx.font='700 11px "Golos Text",system-ui,sans-serif'; cx.textAlign='center'; cx.fillText(chrom[idxIn(x.n)],bx+bw/2,yy-5.5); } cx.globalAlpha=1; });
+  G.flash=G.flash.filter(function(f){ f.age=now-f.born; return f.age<0.4; });
+  drawKeys(cx,w,h,kh,G.flash);
+  if(now<G.t0){ var cnt=Math.ceil((G.t0-now)/G.spb); cx.fillStyle=C.ink; cx.font='700 54px "Unbounded",system-ui,sans-serif'; cx.textAlign='center'; cx.fillText(String(Math.min(4,cnt)),w/2,top/2); }
+  if(G.msg && now-G.msg.born<0.6){ cx.globalAlpha=1-(now-G.msg.born)/0.6; cx.fillStyle=G.msg.c; cx.font='700 20px "Golos Text",system-ui,sans-serif'; cx.textAlign='center'; cx.fillText(G.msg.txt,w/2,top-28); cx.globalAlpha=1; }
+  if(G.combo>=10){ cx.fillStyle=C.good; cx.font='700 14px "Golos Text",system-ui,sans-serif'; cx.textAlign='right'; cx.fillText('×'+mult(),w-10,22); }
+  if(!G.demo){ var tot=G.per+G.good+G.miss; document.getElementById('gScore').textContent=G.score; document.getElementById('gCombo').textContent=G.combo; document.getElementById('gAcc').textContent=tot?Math.round(100*(G.per+0.5*G.good)/tot)+'%':'—'; }
+  if(now>G.end){ var g=G; gameStop(); return g.demo?drawIdle(g.s):renderResult(g); }
+  G.raf=requestAnimationFrame(frame);
+}
+function gameStop(){ if(G){ cancelAnimationFrame(G.raf); try{ G.out.disconnect(); }catch(e){} G=null; } quizHandler=null; held={}; ['gPlay','gDemo'].forEach(function(id){ var b=document.getElementById(id); if(b) b.disabled=false; }); var s=document.getElementById('gStop'); if(s) s.disabled=true; }
+function renderResult(g){
+  var tot=g.notes.length, acc=tot?(g.per+0.5*g.good)/tot:0, st=stars(acc), prev=S.best[g.s.id], rec=!prev||acc>prev.acc;
+  var xp=Math.round(acc*tot*2)+st*20; S.xp+=xp; if(rec) S.best[g.s.id]={acc:acc,stars:Math.max(st,prev?prev.stars:0),score:g.score}; else if(st>prev.stars) prev.stars=st; bumpStreak(); save(); paintStats();
+  var idx=SONGS.indexOf(g.s), nxt=SONGS[idx+1];
+  var h='<div class="summary"><p class="kind">'+esc(g.s.title)+'</p><h1>'+['Ещё попытка','Неплохо!','Хорошо!','Отлично!'][st]+' '+'★'.repeat(st)+'☆'.repeat(3-st)+'</h1>';
+  h+='<div class="sgrid"><div><span class="num">'+Math.round(acc*100)+'%</span><small>точность'+(rec&&acc>0?' · рекорд!':'')+'</small></div><div><span class="num">'+g.maxc+'</span><small>лучшая серия</small></div><div><span class="num">+'+xp+'</span><small>XP</small></div></div>';
+  h+='<p>Идеально: <b>'+g.per+'</b> · Хорошо: <b>'+g.good+'</b> · Пропущено: <b>'+g.miss+'</b> · Лишние нажатия: <b>'+g.wrong+'</b></p>';
+  var tip = st===0 ? 'Включите «Скорость 60 %» и «Подсказку звуком», сначала послушайте песню кнопкой «Прослушать».' : (g.wrong>g.per ? 'Много лишних нажатий: проверьте, что на FM-1 NOTES OUT стоит на KEYS и музыка на нём остановлена.' : (st<3 ? 'Чтобы получить 3 звезды, нужно 95 % точности. Если всё время «рано» или «поздно» — пройдите калибровку.' : 'Попробуйте на скорости 100 % или переходите к следующей песне.'));
+  h+='<div class="card"><b>Совет:</b> '+tip+'</div>';
+  h+='<div class="actions"><button type="button" class="big" id="rAgain">Ещё раз</button>'+(nxt&&unlocked(idx+1)?'<button type="button" class="ghost" id="rNext">Дальше: '+esc(nxt.title)+'</button>':'')+'<button type="button" class="ghost" id="rList">К песням</button></div></div>';
+  app.innerHTML=h; document.body.classList.remove('gaming'); window.scrollTo(0,0);
+  document.getElementById('rAgain').addEventListener('click',function(){ renderSong(g.s); });
+  document.getElementById('rList').addEventListener('click',renderGameHome);
+  var rn=document.getElementById('rNext'); if(rn) rn.addEventListener('click',function(){ renderSong(nxt); });
+}
+
+function leaveOk(){ return !(blocks.length && bi<blocks.length) || confirm('Выйти из сессии? Текущий урок не будет отмечен.'); }
+document.getElementById('goHome').addEventListener('click',function(){ if(!leaveOk()) return; blocks=[]; mode='tr'; renderHome(); });
+document.getElementById('goSchool').addEventListener('click',function(){ if(!leaveOk()) return; blocks=[]; mode='sc'; renderHome(); });
+document.getElementById('goGame').addEventListener('click',function(){ if(!leaveOk()) return; blocks=[]; mode='gm'; renderGameHome(); });
+document.getElementById('reset').addEventListener('click',function(){ if(!confirm('Сбросить весь прогресс и XP?')) return; S={done:{},xp:0,streak:0,last:'',carry:[],scarry:[],best:{},gset:{speed:1,guide:true,beat:true,lat:0,all:false}}; save(); paintStats(); renderHome(); });
+paintStats(); renderHome();
+})();
+</script>
+</body>
+</html>
