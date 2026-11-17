@@ -159,6 +159,22 @@ body.gaming .kbwrap{display:none}
 .kb .ot{stroke:none}
 footer{padding:2rem 0 1rem;color:var(--muted);font-size:14px}
 .hidden{display:none !important}
+
+@media (max-height:560px){
+  .bar{position:static}
+  body{padding-bottom:calc(34vh + 70px)}
+  .dock{padding:.3rem 0 calc(.3rem + env(safe-area-inset-bottom,0px))}
+  .dock-top{margin-bottom:.2rem;font-size:13px;flex-wrap:nowrap}
+  .dock-top .st{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+  .dock-btn{padding:.35rem .6rem;font-size:13px;white-space:nowrap}
+  .kb{max-height:34vh;width:auto;max-width:100%;margin:0 auto}
+  h1{font-size:26px;margin:1rem 0 .4rem}
+  .stitle{font-size:22px}
+  .gtop{margin-top:.6rem}
+  body.gaming .goal{display:none}
+  body.gaming .stitle{display:none}
+  .hud{margin:.3rem 0}
+}
 </style>
 </head>
 <body>
@@ -519,6 +535,8 @@ function clearHints(){ document.querySelectorAll('.kb .hint').forEach(function(e
 
 var dock=document.getElementById('dock'), tog=document.getElementById('dockToggle');
 tog.addEventListener('click',function(){ var m=dock.classList.toggle('min'); tog.textContent=m?'Показать клавиатуру':'Скрыть клавиатуру'; tog.setAttribute('aria-expanded',m?'false':'true'); document.body.style.paddingBottom=m?'90px':''; });
+function setDock(m){ dock.classList.toggle('min',m); tog.textContent=m?'Показать клавиатуру':'Скрыть клавиатуру'; tog.setAttribute('aria-expanded',m?'false':'true'); document.body.style.paddingBottom=m?'70px':''; }
+var shortMQ=window.matchMedia('(max-height:560px)'); if(shortMQ.matches) setDock(true); if(shortMQ.addEventListener) shortMQ.addEventListener('change',function(e){ setDock(e.matches); });
 
 var mstatus=document.getElementById('mstatus'), midi=null;
 function bindMidi(){ var names=[]; midi.inputs.forEach(function(inp){ inp.onmidimessage=onMidi; names.push(inp.name||'MIDI'); }); mstatus.textContent=names.length?('Подключено: '+names.join(', ')):'Устройство не найдено. Проверьте кабель.'; }
@@ -833,7 +851,7 @@ function renderSong(s){
 }
 
 var CV=null;
-function setupCanvas(){ var cv=document.getElementById('gc'); if(!cv) return; var w=cv.parentNode.clientWidth, h=Math.max(280,Math.min(window.innerHeight*0.58,560)); var dpr=window.devicePixelRatio||1; cv.width=Math.round(w*dpr); cv.height=Math.round(h*dpr); cv.style.width=w+'px'; cv.style.height=h+'px'; var cx=cv.getContext('2d'); cx.setTransform(dpr,0,0,dpr,0,0); var cs=getComputedStyle(document.documentElement); CV={cv:cv,cx:cx,w:w,h:h,kh:Math.min(110,h*0.24),col:{bg:cs.getPropertyValue('--surface').trim(),rule:cs.getPropertyValue('--rule').trim(),ink:cs.getPropertyValue('--ink').trim(),muted:cs.getPropertyValue('--muted').trim(),p1:cs.getPropertyValue('--p1').trim(),p4:cs.getPropertyValue('--p4').trim(),good:cs.getPropertyValue('--good').trim(),warn:cs.getPropertyValue('--warn').trim()}}; }
+function setupCanvas(){ var cv=document.getElementById('gc'); if(!cv) return; var w=cv.parentNode.clientWidth, h=window.innerHeight<560?Math.max(160,window.innerHeight-130):Math.max(280,Math.min(window.innerHeight*0.58,560)); var dpr=window.devicePixelRatio||1; cv.width=Math.round(w*dpr); cv.height=Math.round(h*dpr); cv.style.width=w+'px'; cv.style.height=h+'px'; var cx=cv.getContext('2d'); cx.setTransform(dpr,0,0,dpr,0,0); var cs=getComputedStyle(document.documentElement); CV={cv:cv,cx:cx,w:w,h:h,kh:Math.min(110,h*0.24),col:{bg:cs.getPropertyValue('--surface').trim(),rule:cs.getPropertyValue('--rule').trim(),ink:cs.getPropertyValue('--ink').trim(),muted:cs.getPropertyValue('--muted').trim(),p1:cs.getPropertyValue('--p1').trim(),p4:cs.getPropertyValue('--p4').trim(),good:cs.getPropertyValue('--good').trim(),warn:cs.getPropertyValue('--warn').trim()}}; }
 window.addEventListener('resize',function(){ if(document.getElementById('gc')){ setupCanvas(); if(!G&&CV) drawIdle(null); } });
 function laneOf(n){ var i=((n-BASE)%12+12)%12, idx=n-BASE; while(idx<0) idx+=12; while(idx>26) idx-=12; var w=whiteIdx.indexOf(idx); if(w>=0) return {black:false,x:w}; for(var k in blackAfter){ if(blackAfter[k]===idx) return {black:true,x:+k+1}; } return {black:false,x:0}; }
 function keyAt(x,y,w,h){ var kh=CV.kh, top=h-kh; if(y<top) return null; var ww=w/16; if(y<top+kh*0.6){ for(var k in blackAfter){ var cx=(+k+1)*ww; if(Math.abs(x-cx)<ww*0.33) return BASE+blackAfter[k]; } } var wi=Math.max(0,Math.min(15,Math.floor(x/ww))); return BASE+whiteIdx[wi]; }
@@ -876,6 +894,7 @@ function startRun(s,demo){
   document.getElementById('gStop').disabled=false; document.getElementById('gPlay').disabled=true; document.getElementById('gDemo').disabled=true;
   quizHandler=demo?null:function(n,ts){ judge(n,inAudio(ts)); };
   G.raf=requestAnimationFrame(frame);
+  if(window.innerHeight<560){ try{ var r=CV.cv.getBoundingClientRect(), d=document.getElementById('dock'); window.scrollBy({top:r.bottom-(window.innerHeight-(d?d.offsetHeight:0)-6),behavior:'smooth'}); }catch(e){} }
 }
 function judge(n,ta){ if(!G) return; var c=ensureCtx(), t=ta-G.lat, best=null, bd=1; G.notes.forEach(function(x){ if(x.j) return; if(((n-x.n)%12+12)%12!==0) return; var d=t-x.t; if(Math.abs(d)<0.16 && Math.abs(d)<Math.abs(bd)){ best=x; bd=d; } });
   if(!best){ G.wrong++; G.combo=0; G.flash.push({n:n,c:CV.col.warn,born:c.currentTime}); G.msg={txt:'Мимо',c:CV.col.warn,born:c.currentTime}; return; }
